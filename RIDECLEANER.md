@@ -78,8 +78,15 @@ src/main.js           Bootstrap, level-keuze, PMREM-reflecties, game-loop
   GLTF-modellen laden kan met THREE.GLTFLoader (addons staan al in de import map).
 
 ## ACTIVE WORK
-- Live op itch.io! Nu: delen op Reddit/X, feedback verzamelen via
-  Hello@Lifthill.studio, en reageren op comments op de itch-pagina.
+- Live op itch.io! Thomas deelt op Reddit/X (incl. eigen gameplay-video via
+  Cmd+Shift+5). Daarna: feedback verzamelen (Hello@Lifthill.studio, itch
+  comments) en patches via nieuwe zip-upload (zip-recept: zie hieronder).
+
+## PATCH-RECEPT (nieuwe build naar itch)
+1. Fix maken → `node --check` op gewijzigde files → lokaal testen (:8123)
+2. `zip -rq dist/ridewash-prototype-vX.zip index.html src vendor assets`
+3. itch edit-pagina → Delete file → nieuwe zip → "played in browser" aanvinken
+4. Committen + pushen naar GitHub
 
 ## IDEAS
 - Echte HDRI-lucht (Poly Haven) i.p.v. gradient
