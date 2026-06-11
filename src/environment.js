@@ -508,13 +508,14 @@ export function buildEnvironment(scene, o) {
       new THREE.MeshStandardMaterial({ color: 0x3a4046, metalness: 0.7, roughness: 0.45 })));
   }
 
-  // ---------- kleine dag/nacht-cyclus ----------
-  const CYCLE_SECONDS = 360;
-  let t = 0.22; // begin halverwege de ochtend
+  // ---------- vast daglicht ----------
+  // Dag/nacht-cyclus staat uit (op verzoek permanent dag). De code blijft
+  // staan zodat hij later zo weer aan kan: laat update() weer per frame
+  // draaien met t += dt / 360.
+  const t = 0.22; // vast moment: halverwege de ochtend
   const sunCenter = new THREE.Vector3(40, 0, -28);
 
-  function update(dt) {
-    t = (t + dt / CYCLE_SECONDS) % 1;
+  function update() {
     const theta = t * Math.PI * 2;
     const el = Math.sin(theta); // zonshoogte (-1..1); negatief = nacht (maan)
 
@@ -551,7 +552,7 @@ export function buildEnvironment(scene, o) {
       .lerp(new THREE.Color(0x2a3a55), wNight * 0.8);
     for (const spr of clouds.sprites) spr.material.color.copy(cloudTint);
   }
-  update(0);
+  update();
 
-  return { update };
+  return { update: () => {} };
 }
