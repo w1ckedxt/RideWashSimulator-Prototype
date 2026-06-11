@@ -84,7 +84,7 @@ export const DARKRIDE = {
 
     // ---------- de geul (flume-trog) met water ----------
     const troughAtlas = new CellAtlas(dirt, {
-      id: 'trough', label: 'Flume trough', cols: 3, rows: 1,
+      id: 'trough', label: 'Water channel', cols: 3, rows: 1,
       texW: 768, texH: 128, cellWorld: 24, seed: 613, leafDensity: 2.6,
     });
     const troughMat = createCleanableMaterial(

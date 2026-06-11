@@ -29,6 +29,11 @@ export class UI {
 
     this.#buildLevelMenu();
     this.#buildSections();
+
+    // controls ook in het pauzemenu (gekloond vanaf het startscherm)
+    const controls = document.querySelector('#startOverlay .panel');
+    const settingsPanel = this.pauseOverlay.querySelector('.panel');
+    this.pauseOverlay.insertBefore(controls.cloneNode(true), settingsPanel);
   }
 
   static bestTimes() {
@@ -107,6 +112,21 @@ export class UI {
 
   setSprayingHit(hit) {
     document.getElementById('crosshair').classList.toggle('hit', hit);
+  }
+
+  /** Modus-indicator linksboven: vertelt hoe je de cherry picker gebruikt. */
+  setMode(mode) {
+    const el = document.getElementById('modeHint');
+    if (mode === 'lift') {
+      el.classList.add('lift');
+      el.innerHTML =
+        '🛗 <b>CHERRY PICKER</b> &nbsp; <span class="kbd">Space</span> up · ' +
+        '<span class="kbd">C</span> down · <span class="kbd">V</span> back on foot';
+    } else {
+      el.classList.remove('lift');
+      el.innerHTML =
+        '🚶 On foot — press <span class="kbd">V</span> for the cherry picker (free flying!)';
+    }
   }
 
   /** Settings-panel in het pauzemenu koppelen. */

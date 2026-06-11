@@ -194,6 +194,18 @@
       position: absolute; top: 16px; left: 18px; font-size: 13px; font-weight: 700;
       letter-spacing: 2px; color: #f4b864; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
+    #modeHint {
+      position: absolute; top: 42px; left: 18px;
+      padding: 8px 14px; border-radius: 9px; font-size: 12.5px; line-height: 2;
+      background: linear-gradient(180deg, rgba(73, 51, 28, 0.85), rgba(50, 34, 18, 0.88));
+      border: 2px solid rgba(58, 38, 20, 0.9); color: #ead9bd;
+      box-shadow: inset 0 1px 0 rgba(255, 224, 170, 0.12);
+    }
+    #modeHint .kbd { min-width: 30px; padding: 1px 7px; font-size: 11px; border-bottom-width: 2px; }
+    #modeHint.lift {
+      border-color: var(--rust-bright);
+      box-shadow: 0 0 12px rgba(224, 138, 53, 0.35), inset 0 1px 0 rgba(255, 224, 170, 0.12);
+    }
     #progressWrap { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: 420px; text-align: center; }
     #progressLabel {
       font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--steel-pale);
@@ -337,6 +349,7 @@
   <div id="hud">
     <div id="crosshair"></div>
     <div id="levelName"></div>
+    <div id="modeHint"></div>
     <div id="progressWrap">
       <div id="progressLabel">CLEAN: 0%</div>
       <div id="progressBar"><div id="progressFill"></div></div>

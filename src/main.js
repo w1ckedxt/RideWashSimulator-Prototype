@@ -88,8 +88,10 @@ dirt.onSectionClean = (label) => {
   audio.sectionDing();
 };
 player.onModeChange = (mode) => {
+  ui.setMode(mode);
   ui.toast(mode === 'lift' ? '🛗 Cherry picker ON — Space/C for up/down' : '🚶 Back on foot');
 };
+ui.setMode('walk');
 
 let started = false;
 let won = false;
@@ -109,7 +111,7 @@ ui.onMenu(() => {
 ui.onRestart(() => location.reload());
 
 // Share-knop op het winscherm (URL bijwerken naar de itch.io-pagina na release)
-const SHARE_URL = 'https://lifthill.studio';
+const SHARE_URL = 'https://lifthillstudio.itch.io/ridewash-simulator';
 ui.onShare(() => {
   const mins = Math.floor(playSeconds / 60);
   const secs = Math.round(playSeconds % 60);
