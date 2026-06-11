@@ -33,7 +33,7 @@ export const SHIP = {
       texW: 512, texH: 384, cellWorld: 3.5, seed: 311, leafDensity: 0.6,
     });
     const frameMat = createCleanableMaterial(
-      { color: 0x5b6e7e, metalness: 0.55, roughness: 0.45 }, frameAtlas.mask.texture);
+      { color: 0x6d8499, metalness: 0.6, roughness: 0.4 }, frameAtlas.mask.texture);
     const frameGeos = [];
     for (const side of [-1, 1]) {
       const apex = new THREE.Vector3(0, apexY, side * 3.2);
@@ -70,7 +70,7 @@ export const SHIP = {
       lookup: () => new THREE.Vector3(0, 1.6, 0),
     });
     const hullMat = createCleanableMaterial(
-      { color: 0x6e4a28, metalness: 0.08, roughness: 0.55 }, hullMask.texture);
+      { color: 0x87592c, metalness: 0.08, roughness: 0.45 }, hullMask.texture);
     const hullGeo = new THREE.CapsuleGeometry(1.05, 4.2, 6, 14);
     hullGeo.rotateZ(Math.PI / 2);
     hullGeo.scale(1, 0.6, 0.85);

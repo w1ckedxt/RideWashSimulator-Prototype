@@ -79,7 +79,7 @@ export const WOODIE = {
         lookup: (u) => timberOffset(side)(Math.floor(u * N) % N),
       });
       const mat = createCleanableMaterial(
-        { color: 0x7a5a33, metalness: 0.03, roughness: 0.7 }, mask.texture);
+        { color: 0x96703f, metalness: 0.03, roughness: 0.6 }, mask.texture);
       addChunkMeshes(
         buildTubeChunks({
           ...tubeOpts, offsetFn: timberOffset(side),
@@ -102,7 +102,7 @@ export const WOODIE = {
       },
     });
     const tieMat = createCleanableMaterial(
-      { color: 0x6b4d2a, metalness: 0.03, roughness: 0.75 }, tieMask.texture);
+      { color: 0x84603a, metalness: 0.03, roughness: 0.65 }, tieMask.texture);
     const tieGeos = [];
     const tieSpacing = 0.8;
     const tieCount = Math.min(Math.floor(length / tieSpacing), tieCols * tieRows);
@@ -136,7 +136,7 @@ export const WOODIE = {
       texW: 1024, texH: 512, cellWorld: 3.2, seed: 61, leafDensity: 2.0,
     });
     const bentMat = createCleanableMaterial(
-      { color: 0x8a6537, metalness: 0.02, roughness: 0.8 }, bentAtlas.mask.texture);
+      { color: 0x9c7642, metalness: 0.02, roughness: 0.7 }, bentAtlas.mask.texture);
     const bentGeos = [];
     const bentStep = Math.max(1, Math.round(3.0 / ds));
     let bentCount = 0;

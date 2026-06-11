@@ -33,7 +33,7 @@ export function buildWalkway(trackData, dirt, cleanables) {
   });
 
   const grateMat = createCleanableMaterial(
-    { color: 0x4a5158, metalness: 0.6, roughness: 0.75 }, atlas.mask.texture);
+    { color: 0x626c78, metalness: 0.6, roughness: 0.6 }, atlas.mask.texture);
   const railMat = createCleanableMaterial(
     { color: 0xb9bfc6, metalness: 0.85, roughness: 0.35 }, atlas.mask.texture);
   const chainMat = createCleanableMaterial(

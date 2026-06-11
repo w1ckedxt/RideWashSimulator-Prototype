@@ -28,7 +28,7 @@ export const CONFIG = {
   colors: {
     rail: 0xa61e26,           // verweerd dieprood staal
     spine: 0xa61e26,
-    tie: 0x33373d,            // donkergrijs
+    tie: 0x474d56,            // grijs (schoon = zichtbaar lichter dan vuil)
     support: 0xcfc9bb,        // vuilwit
     platform: 0x8d8780,       // beton
     dust: [0.115, 0.095, 0.07],  // basis vuilkleur (donker, smerig bruingrijs)
