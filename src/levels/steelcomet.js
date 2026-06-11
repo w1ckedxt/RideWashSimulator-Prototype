@@ -3,7 +3,7 @@ import { computeTrackData, steelCometPoints } from '../layout.js';
 import { buildTrack } from '../track.js';
 import { buildWalkway } from '../walkway.js';
 import { buildTrain } from '../train.js';
-import { buildEnvironment, makeSign, makeStation } from '../environment.js';
+import { buildEnvironment, makeBooth, makeSign, makeStation } from '../environment.js';
 
 export const STEELCOMET = {
   id: 'steel',
@@ -24,8 +24,9 @@ export const STEELCOMET = {
     }));
     scene.add(makeStation(dirt, cleanables));
     scene.add(makeSign('Steel Comet', { x: 26, z: 13, rotY: -Math.PI / 2.4 }));
+    scene.add(makeBooth(dirt, cleanables, { x: 22, z: 7, rotY: -0.7 }));
 
-    buildEnvironment(scene, {
+    const env = buildEnvironment(scene, {
       clearFn: (x, z) => {
         for (let i = 0; i < trackData.samples.length; i += 3) {
           const p = trackData.samples[i].pos;
@@ -43,6 +44,6 @@ export const STEELCOMET = {
       },
     });
 
-    return { spawn: { pos: [16, 1.8, 14], yaw: -0.35, pitch: 0.02 } };
+    return { spawn: { pos: [16, 1.7, 14], yaw: -0.35, pitch: 0.02 }, envUpdate: env.update };
   },
 };

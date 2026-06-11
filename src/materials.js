@@ -23,7 +23,7 @@ function injectDirt(shader, texture) {
       'vec4 dirtTex = texture2D(uDirtMap, vUv);',
       'float dirtAmt = dirtTex.r;',
       'vec3 dirtCol = mix(uDustColor, uLeafColor, dirtTex.g);',
-      'dirtCol *= 0.78 + 0.45 * dirtTex.b;',
+      'dirtCol *= 0.5 + 0.32 * dirtTex.b;',
       'diffuseColor.rgb = mix(diffuseColor.rgb, dirtCol, dirtAmt);',
     ].join('\n'))
     .replace('#include <roughnessmap_fragment>', [

@@ -4,12 +4,12 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CellAtlas } from '../atlas.js';
 import { createCleanableMaterial } from '../materials.js';
-import { buildEnvironment, makeSign, makeFenceLine, FENCE_GREEN } from '../environment.js';
+import { buildEnvironment, makeBooth, makeSign, makeFenceLine, FENCE_GREEN } from '../environment.js';
 import { stripeTexture, woodTexture } from '../textures.js';
 
 // Paardje in lokale ruimte: +X = kijkrichting. Onderdelen verdeeld over
 // kleur-buckets zodat elk paard een eigen vacht/zadel kan hebben.
-function buildHorse(atlas, buckets, coatKey, angle, r, lift) {
+function buildHorse(atlas, buckets, coatKey, accentKey, angle, r, lift) {
   const coat = [];
   const dark = [];
   const accent = [];
@@ -70,7 +70,7 @@ function buildHorse(atlas, buckets, coatKey, angle, r, lift) {
   };
   place(coat, buckets[coatKey]);
   place(dark, buckets.dark);
-  place(accent, buckets.accent);
+  place(accent, buckets[accentKey]);
 }
 
 export const CAROUSEL = {
@@ -162,16 +162,21 @@ export const CAROUSEL = {
       texW: 512, texH: 256, cellWorld: 2.2, seed: 229, leafDensity: 0.7,
     });
     const mats = {
-      white: createCleanableMaterial({ color: 0xf2ede4, metalness: 0.1, roughness: 0.35 }, atlas.mask.texture),
-      chestnut: createCleanableMaterial({ color: 0x8a5a33, metalness: 0.1, roughness: 0.4 }, atlas.mask.texture),
-      black: createCleanableMaterial({ color: 0x35312e, metalness: 0.15, roughness: 0.35 }, atlas.mask.texture),
-      grey: createCleanableMaterial({ color: 0xb9bdc4, metalness: 0.1, roughness: 0.35 }, atlas.mask.texture),
+      white: createCleanableMaterial({ color: 0xf2ede4, metalness: 0.1, roughness: 0.3 }, atlas.mask.texture),
+      chestnut: createCleanableMaterial({ color: 0x8a5a33, metalness: 0.1, roughness: 0.35 }, atlas.mask.texture),
+      palomino: createCleanableMaterial({ color: 0xc8913a, metalness: 0.15, roughness: 0.3 }, atlas.mask.texture),
+      black: createCleanableMaterial({ color: 0x35312e, metalness: 0.2, roughness: 0.3 }, atlas.mask.texture),
+      grey: createCleanableMaterial({ color: 0xb9bdc4, metalness: 0.1, roughness: 0.3 }, atlas.mask.texture),
       dark: createCleanableMaterial({ color: 0x4a3526, metalness: 0.1, roughness: 0.5 }, atlas.mask.texture),
-      accent: createCleanableMaterial({ color: 0xb03a30, metalness: 0.25, roughness: 0.4 }, atlas.mask.texture),
+      accentRed: createCleanableMaterial({ color: 0xb03a30, metalness: 0.3, roughness: 0.35 }, atlas.mask.texture),
+      accentBlue: createCleanableMaterial({ color: 0x2f5276, metalness: 0.3, roughness: 0.35 }, atlas.mask.texture),
       pole: createCleanableMaterial({ color: 0xc9a227, metalness: 0.85, roughness: 0.25 }, atlas.mask.texture),
     };
-    const buckets = { white: [], chestnut: [], black: [], grey: [], dark: [], accent: [], pole: [] };
-    const coats = ['white', 'chestnut', 'grey', 'black'];
+    const buckets = {
+      white: [], chestnut: [], palomino: [], black: [], grey: [],
+      dark: [], accentRed: [], accentBlue: [], pole: [],
+    };
+    const coats = ['white', 'chestnut', 'palomino', 'black', 'grey'];
 
     for (let k = 0; k < 8; k++) {
       const a = (k / 8) * Math.PI * 2;
@@ -184,7 +189,7 @@ export const CAROUSEL = {
       pole.translate(px, 2.45, pz);
       buckets.pole.push(pole);
 
-      buildHorse(atlas, buckets, coats[k % 4], a, r, (k % 2) * 0.35);
+      buildHorse(atlas, buckets, coats[k % 5], k % 2 ? 'accentRed' : 'accentBlue', a, r, (k % 2) * 0.35);
     }
     for (const [key, geos] of Object.entries(buckets)) {
       if (!geos.length) continue;
@@ -197,6 +202,7 @@ export const CAROUSEL = {
 
     scene.add(group);
     scene.add(makeSign('Carousel', { x: -6, z: 9, rotY: Math.PI / 5 }));
+    scene.add(makeBooth(dirt, cleanables, { x: 7.2, z: 8.5, rotY: -0.6 }));
 
     const fencePts = [];
     for (let k = 0; k <= 8; k++) {
@@ -205,14 +211,14 @@ export const CAROUSEL = {
     }
     scene.add(makeFenceLine(fencePts, 1.0, FENCE_GREEN()));
 
-    buildEnvironment(scene, {
+    const env = buildEnvironment(scene, {
       clearFn: (x, z) => x * x + z * z > 10 * 10 && !(x > -8 && x < 8 && z > 6 && z < 18),
       treeCount: 90,
       treeArea: { x0: -60, x1: 60, z0: -60, z1: 50 },
       fencePts: [[-30, 26], [-30, -30], [30, -30], [30, 26], [6, 26]],
-      plaza: { x: 0, z: 11, w: 18, d: 9, queues: [] },
+      plaza: { x: 0, z: 11, w: 18, d: 9, queues: [[[-4, 9.5], [4, 9.5]], [[4, 12], [-4, 12]]] },
     });
 
-    return { spawn: { pos: [0, 1.7, 12], yaw: 0, pitch: 0.02 } };
+    return { spawn: { pos: [0, 1.7, 12], yaw: 0, pitch: 0.02 }, envUpdate: env.update };
   },
 };

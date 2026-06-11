@@ -25,13 +25,16 @@ function makeNoiseTexture(base, speckle, repeat) {
 }
 
 function makeSky() {
-  const geo = new THREE.SphereGeometry(440, 24, 16);
+  const geo = new THREE.SphereGeometry(440, 32, 20);
   const mat = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
     uniforms: {
       topColor: { value: new THREE.Color(0x4584bd) },
       bottomColor: { value: new THREE.Color(0xccdbe8) },
+      sunDir: { value: new THREE.Vector3(0.5, 0.6, 0.4).normalize() },
+      glowColor: { value: new THREE.Color(0xffd9a0) },
+      glowStrength: { value: 0.35 },
     },
     vertexShader: `
       varying vec3 vWorld;
@@ -42,44 +45,77 @@ function makeSky() {
     fragmentShader: `
       uniform vec3 topColor;
       uniform vec3 bottomColor;
+      uniform vec3 sunDir;
+      uniform vec3 glowColor;
+      uniform float glowStrength;
       varying vec3 vWorld;
       void main() {
-        float h = clamp(normalize(vWorld).y * 1.4 + 0.12, 0.0, 1.0);
-        gl_FragColor = vec4(mix(bottomColor, topColor, pow(h, 0.8)), 1.0);
+        vec3 dir = normalize(vWorld);
+        float h = clamp(dir.y * 1.4 + 0.12, 0.0, 1.0);
+        vec3 col = mix(bottomColor, topColor, pow(h, 0.8));
+        // zachte zonnegloed + felle kern (mooie zonsondergangen)
+        float d = max(dot(dir, sunDir), 0.0);
+        col += glowColor * (pow(d, 9.0) * glowStrength + pow(d, 90.0) * 0.9);
+        gl_FragColor = vec4(col, 1.0);
       }`,
   });
   return new THREE.Mesh(geo, mat);
 }
 
+// Hogere-resolutie wolken: grote zachte stapelwolken van meerdere plukken.
 function makeClouds() {
   const c = document.createElement('canvas');
-  c.width = 256; c.height = 128;
+  c.width = 512; c.height = 256;
   const ctx = c.getContext('2d');
-  for (let i = 0; i < 14; i++) {
-    const x = 40 + Math.random() * 176, y = 40 + Math.random() * 48;
-    const r = 18 + Math.random() * 26;
-    const grad = ctx.createRadialGradient(x, y, 2, x, y, r);
-    grad.addColorStop(0, 'rgba(255,255,255,0.55)');
-    grad.addColorStop(1, 'rgba(255,255,255,0)');
+  for (let i = 0; i < 26; i++) {
+    const x = 70 + Math.random() * 372, y = 95 + Math.random() * 90;
+    const r = 28 + Math.random() * 55;
+    const grad = ctx.createRadialGradient(x, y - r * 0.25, 4, x, y, r);
+    grad.addColorStop(0, 'rgba(255,255,255,0.85)');
+    grad.addColorStop(0.55, 'rgba(245,248,252,0.35)');
+    grad.addColorStop(1, 'rgba(240,245,250,0)');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 256, 128);
+    ctx.fillRect(0, 0, 512, 256);
   }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   const group = new THREE.Group();
-  for (let i = 0; i < 9; i++) {
+  const sprites = [];
+  for (let i = 0; i < 11; i++) {
     const mat = new THREE.SpriteMaterial({
-      map: tex, transparent: true, opacity: 0.85, depthWrite: false, fog: false,
+      map: tex, transparent: true, opacity: 0.9, depthWrite: false, fog: false,
     });
     const spr = new THREE.Sprite(mat);
-    const a = (i / 9) * Math.PI * 2 + Math.random();
+    const a = (i / 11) * Math.PI * 2 + Math.random();
     const dist = 180 + Math.random() * 150;
-    spr.position.set(35 + Math.cos(a) * dist, 65 + Math.random() * 35, -25 + Math.sin(a) * dist);
-    const s = 55 + Math.random() * 55;
-    spr.scale.set(s, s * 0.45, 1);
+    spr.position.set(35 + Math.cos(a) * dist, 70 + Math.random() * 40, -25 + Math.sin(a) * dist);
+    const s = 70 + Math.random() * 70;
+    spr.scale.set(s, s * 0.5, 1);
     group.add(spr);
+    sprites.push(spr);
   }
-  return group;
+  return { group, sprites };
+}
+
+// Bergketen in de verte — silhouetten die in de nevel wegvallen.
+function makeMountains() {
+  const geos = [];
+  const n = 18;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + (i % 3) * 0.11;
+    const dist = 330 + (i % 5) * 20;
+    const h = 50 + ((i * 37) % 55);
+    const r = 65 + ((i * 53) % 70);
+    const cone = new THREE.ConeGeometry(r, h, 7);
+    cone.translate(Math.cos(a) * dist + 35, h / 2 - 3, Math.sin(a) * dist - 25);
+    geos.push(cone);
+  }
+  const mesh = new THREE.Mesh(
+    mergeGeometries(geos),
+    new THREE.MeshStandardMaterial({ color: 0x5d7488, roughness: 1, flatShading: true })
+  );
+  mesh.receiveShadow = false;
+  return mesh;
 }
 
 // Bos: bomen via rejection sampling, nooit in/naast de attractie (clearFn).
@@ -184,6 +220,38 @@ export function makeFenceLine(points, height, mat) {
 export const FENCE_GREEN = () =>
   new THREE.MeshStandardMaterial({ color: 0x2e4d3a, metalness: 0.6, roughness: 0.5 });
 
+/** Echte beloopbare trap: treden + zijwangen + leuninkjes. */
+export function makeStairs({ x, z, w = 1.6, h, steps = 4, rotY = 0 }) {
+  const group = new THREE.Group();
+  const stepMat = new THREE.MeshStandardMaterial({ color: 0x7d7872, roughness: 0.85 });
+  const railMat = FENCE_GREEN();
+  const stepH = h / steps;
+  const stepD = 0.34;
+
+  for (let k = 0; k < steps; k++) {
+    const tread = new THREE.Mesh(new THREE.BoxGeometry(w, stepH, stepD), stepMat);
+    tread.position.set(0, stepH * (k + 0.5), -k * stepD);
+    tread.castShadow = tread.receiveShadow = true;
+    tread.userData.walkable = true;
+    group.add(tread);
+  }
+  for (const side of [-1, 1]) {
+    for (let k = 0; k < steps; k++) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.85, 6), railMat);
+      post.position.set(side * (w / 2 + 0.04), stepH * (k + 1) + 0.42, -k * stepD);
+      group.add(post);
+    }
+    const len = Math.hypot(steps * stepD, h);
+    const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, len, 6), railMat);
+    rail.position.set(side * (w / 2 + 0.04), h / 2 + 0.88, -(steps - 1) * stepD / 2);
+    rail.rotation.x = Math.PI / 2 - Math.atan2(h, steps * stepD);
+    group.add(rail);
+  }
+  group.position.set(x, 0, z);
+  group.rotation.y = rotY;
+  return group;
+}
+
 export function makePlaza({ x, z, w, d, queues = [] }) {
   const group = new THREE.Group();
   const concrete = makeNoiseTexture('#9b958c', (r) => {
@@ -244,6 +312,56 @@ export function makeSign(title, { x, z, rotY = 0 }) {
   return group;
 }
 
+/** Operator-booth: het hokje waar de ride vanuit bestuurd wordt. Schoonmaakbaar. */
+export function makeBooth(dirt, cleanables, { x, z, rotY = 0 }) {
+  const group = new THREE.Group();
+  const mask = dirt.createMask({
+    id: 'booth', label: 'Operator booth', w: 256, h: 128,
+    worldU: 9, worldV: 2.6, seed: 911, leafDensity: 1.8,
+    lookup: () => new THREE.Vector3(x, 1.3, z),
+  });
+  const wallMat = createCleanableMaterial(
+    { color: 0xd8cfbb, metalness: 0.1, roughness: 0.55 }, mask.texture);
+  const roofMat = createCleanableMaterial(
+    { color: 0x9e3528, metalness: 0.25, roughness: 0.5 }, mask.texture);
+
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(2.3, 2.3, 2.3), wallMat);
+  walls.position.y = 1.15;
+  walls.castShadow = walls.receiveShadow = true;
+  walls.userData.maskId = 'booth';
+  group.add(walls);
+  cleanables.push(walls);
+
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.16, 2.8), roofMat);
+  roof.position.y = 2.42;
+  roof.castShadow = true;
+  roof.userData.maskId = 'booth';
+  group.add(roof);
+  cleanables.push(roof);
+
+  // raamband rondom + bedieningspaneel buiten (decor)
+  const glass = new THREE.Mesh(
+    new THREE.BoxGeometry(2.34, 0.7, 2.34),
+    new THREE.MeshStandardMaterial({ color: 0x2c4458, metalness: 0.9, roughness: 0.15 }));
+  glass.position.set(0, 1.55, 0);
+  group.add(glass);
+  const console_ = new THREE.Mesh(
+    new THREE.BoxGeometry(0.7, 0.1, 0.35),
+    new THREE.MeshStandardMaterial({ color: 0x232528, roughness: 0.6 }));
+  console_.position.set(1.45, 1.0, 0.4);
+  console_.rotation.x = 0.35;
+  group.add(console_);
+  const consoleLeg = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.05, 1.0, 6),
+    new THREE.MeshStandardMaterial({ color: 0x3a4046, roughness: 0.5 }));
+  consoleLeg.position.set(1.45, 0.5, 0.4);
+  group.add(consoleLeg);
+
+  group.position.set(x, 0, z);
+  group.rotation.y = rotY;
+  return group;
+}
+
 /** Station van de stalen coaster (perron + dak zijn schoonmaakbaar). */
 export function makeStation(dirt, cleanables) {
   const group = new THREE.Group();
@@ -287,9 +405,26 @@ export function makeStation(dirt, cleanables) {
   group.add(roof);
   cleanables.push(roof);
 
-  const fence = makeFenceLine([[-3, 5.4], [19, 5.4]], 1.0, FENCE_GREEN());
-  fence.position.y = 1.5;
-  group.add(fence);
+  // hekwerk: achterrand + zijkanten + airgates langs de baan (met instap-gaten)
+  const fenceMat = FENCE_GREEN();
+  const fenceLines = [
+    [[-3, 5.4], [19, 5.4]],                 // achterrand
+    [[-3, 1.05], [-3, 5.4]],                // zijkant west
+    [[19, 1.05], [19, 5.4]],                // zijkant oost
+    [[-3, 1.05], [0, 1.05]],                // airgates met gaten bij de wagons
+    [[2, 1.05], [3.5, 1.05]],
+    [[5.5, 1.05], [6.5, 1.05]],
+    [[8.5, 1.05], [19, 1.05]],
+  ];
+  for (const line of fenceLines) {
+    const fence = makeFenceLine(line, 1.0, fenceMat);
+    fence.position.y = 1.5;
+    group.add(fence);
+  }
+
+  // echte trapjes vanaf het plein het perron op
+  group.add(makeStairs({ x: 0, z: 6.5, h: 1.5, steps: 4 }));
+  group.add(makeStairs({ x: 16, z: 6.5, h: 1.5, steps: 4 }));
 
   return group;
 }
@@ -299,11 +434,41 @@ export function makeStation(dirt, cleanables) {
  * @param {object} o { clearFn(x,z)→bool, treeCount, treeArea{x0,x1,z0,z1},
  *                     fencePts [[x,z],...], plaza {x,z,w,d,queues} | null }
  */
+// Kleurpaletten voor de dag/nacht-cyclus.
+const DAY = {
+  sun: 0xffeacc, sunI: 2.25, top: 0x4584bd, bot: 0xccdbe8,
+  fog: 0xbcd0e0, hemiI: 0.6, glow: 0xfff0d0, glowS: 0.25,
+};
+const SUNSET = {
+  sun: 0xff9148, sunI: 1.5, top: 0x35507c, bot: 0xf0a45c,
+  fog: 0xd9a06c, hemiI: 0.38, glow: 0xff8a3c, glowS: 1.1,
+};
+const NIGHT = {
+  sun: 0x9db8e8, sunI: 0.45, top: 0x0a1428, bot: 0x1d2d4a,
+  fog: 0x141f33, hemiI: 0.16, glow: 0xb8ccf0, glowS: 0.12,
+};
+
+function blendPalettes(wDay, wSunset, wNight) {
+  const mix = (key) => new THREE.Color(0, 0, 0)
+    .add(new THREE.Color(DAY[key]).multiplyScalar(wDay))
+    .add(new THREE.Color(SUNSET[key]).multiplyScalar(wSunset))
+    .add(new THREE.Color(NIGHT[key]).multiplyScalar(wNight));
+  return {
+    sun: mix('sun'), top: mix('top'), bot: mix('bot'), fog: mix('fog'), glow: mix('glow'),
+    sunI: DAY.sunI * wDay + SUNSET.sunI * wSunset + NIGHT.sunI * wNight,
+    hemiI: DAY.hemiI * wDay + SUNSET.hemiI * wSunset + NIGHT.hemiI * wNight,
+    glowS: DAY.glowS * wDay + SUNSET.glowS * wSunset + NIGHT.glowS * wNight,
+  };
+}
+
 export function buildEnvironment(scene, o) {
   scene.background = new THREE.Color(0xafc9de);
   scene.fog = new THREE.Fog(0xbcd0e0, 140, 420);
-  scene.add(makeSky());
-  scene.add(makeClouds());
+  const sky = makeSky();
+  scene.add(sky);
+  const clouds = makeClouds();
+  scene.add(clouds.group);
+  scene.add(makeMountains());
 
   const hemi = new THREE.HemisphereLight(0xb6cfe4, 0x46532f, 0.6);
   scene.add(hemi);
@@ -342,4 +507,51 @@ export function buildEnvironment(scene, o) {
     scene.add(makeFenceLine(o.fencePts, 1.15,
       new THREE.MeshStandardMaterial({ color: 0x3a4046, metalness: 0.7, roughness: 0.45 })));
   }
+
+  // ---------- kleine dag/nacht-cyclus ----------
+  const CYCLE_SECONDS = 360;
+  let t = 0.22; // begin halverwege de ochtend
+  const sunCenter = new THREE.Vector3(40, 0, -28);
+
+  function update(dt) {
+    t = (t + dt / CYCLE_SECONDS) % 1;
+    const theta = t * Math.PI * 2;
+    const el = Math.sin(theta); // zonshoogte (-1..1); negatief = nacht (maan)
+
+    const wDay = THREE.MathUtils.clamp((el - 0.06) / 0.3, 0, 1);
+    const wNight = THREE.MathUtils.clamp((-el - 0.06) / 0.3, 0, 1);
+    const wSunset = Math.max(0, 1 - wDay - wNight);
+    const p = blendPalettes(wDay, wSunset, wNight);
+
+    // zon (of 's nachts: maan, zelfde lamp aan de overkant)
+    const elAbs = Math.max(Math.abs(el), 0.08);
+    const az = Math.cos(theta) * (el >= 0 ? 1 : -1);
+    sun.position.set(
+      sunCenter.x + az * 150,
+      elAbs * 130 + 12,
+      sunCenter.z + 60 + Math.cos(theta * 0.5) * 20
+    );
+    sun.color.copy(p.sun);
+    sun.intensity = p.sunI;
+    hemi.intensity = p.hemiI;
+    hemi.color.copy(p.top).lerp(new THREE.Color(0xffffff), 0.4);
+
+    sky.material.uniforms.topColor.value.copy(p.top);
+    sky.material.uniforms.bottomColor.value.copy(p.bot);
+    sky.material.uniforms.glowColor.value.copy(p.glow);
+    sky.material.uniforms.glowStrength.value = p.glowS;
+    sky.material.uniforms.sunDir.value
+      .copy(sun.position).sub(sunCenter).normalize();
+
+    scene.fog.color.copy(p.fog);
+    scene.background.copy(p.fog);
+
+    // wolken kleuren mee met het licht
+    const cloudTint = new THREE.Color(0xffffff).lerp(p.glow, wSunset * 0.55)
+      .lerp(new THREE.Color(0x2a3a55), wNight * 0.8);
+    for (const spr of clouds.sprites) spr.material.color.copy(cloudTint);
+  }
+  update(0);
+
+  return { update };
 }

@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CellAtlas } from '../atlas.js';
 import { createCleanableMaterial } from '../materials.js';
-import { buildEnvironment, makeSign, makeFenceLine, FENCE_GREEN } from '../environment.js';
+import { buildEnvironment, makeBooth, makeSign, makeFenceLine, FENCE_GREEN } from '../environment.js';
 
 const Y = new THREE.Vector3(0, 1, 0);
 
@@ -179,17 +179,18 @@ export const SHIP = {
 
     scene.add(group);
     scene.add(makeSign('Swinging Ship', { x: -7, z: 10, rotY: Math.PI / 5 }));
+    scene.add(makeBooth(dirt, cleanables, { x: 8.6, z: 8, rotY: -0.6 }));
     scene.add(makeFenceLine(
       [[-7, 6], [-7, -6], [7, -6], [7, 6], [2.5, 6]], 1.0, FENCE_GREEN()));
 
-    buildEnvironment(scene, {
+    const env = buildEnvironment(scene, {
       clearFn: (x, z) => (x * x / 100 + z * z / 64) > 1.6 && !(x > -9 && x < 9 && z > 5 && z < 18),
       treeCount: 90,
       treeArea: { x0: -60, x1: 60, z0: -60, z1: 50 },
       fencePts: [[-32, 26], [-32, -32], [32, -32], [32, 26], [7, 26]],
-      plaza: { x: 0, z: 11, w: 20, d: 9, queues: [] },
+      plaza: { x: 0, z: 11, w: 20, d: 9, queues: [[[-5, 9.5], [5, 9.5]], [[5, 12.5], [-5, 12.5]]] },
     });
 
-    return { spawn: { pos: [0, 1.8, 13], yaw: 0, pitch: 0.06 } };
+    return { spawn: { pos: [0, 1.7, 13], yaw: 0, pitch: 0.06 }, envUpdate: env.update };
   },
 };

@@ -46,6 +46,7 @@ window.addEventListener('resize', () => {
 const dirt = new DirtSystem();
 const cleanables = [];
 const levelResult = level.build({ scene, dirt, cleanables });
+const envUpdate = levelResult.envUpdate || null;
 
 // ---------- Speler, spuit, audio, UI ----------
 const player = new PlayerControls(camera, renderer.domElement);
@@ -165,6 +166,7 @@ function tick() {
   const dt = Math.min(clock.getDelta(), 0.05);
 
   player.update(dt);
+  if (envUpdate) envUpdate(dt);
   const spraying = player.spraying && started && !won;
   washer.update(dt, spraying);
 
@@ -198,4 +200,4 @@ function tick() {
 tick();
 
 // Debug-hook (alleen voor inspectie in de console; geen gameplay-effect)
-window.__game = { scene, camera, dirt, player, washer, level };
+window.__game = { scene, camera, dirt, player, washer, level, envUpdate };

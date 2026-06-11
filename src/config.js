@@ -31,8 +31,8 @@ export const CONFIG = {
     tie: 0x33373d,            // donkergrijs
     support: 0xcfc9bb,        // vuilwit
     platform: 0x8d8780,       // beton
-    dust: [0.155, 0.125, 0.095], // basis vuilkleur (donker grimey bruingrijs)
-    leaf: [0.095, 0.125, 0.045], // blad/groen-bruin, donker
+    dust: [0.115, 0.095, 0.07],  // basis vuilkleur (donker, smerig bruingrijs)
+    leaf: [0.075, 0.105, 0.035], // blad/mos, donker
   },
   spray: {
     range: 15,                // effectieve reikwijdte (m)

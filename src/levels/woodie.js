@@ -9,7 +9,7 @@ import { buildWalkway } from '../walkway.js';
 import { buildTrain } from '../train.js';
 import { CellAtlas } from '../atlas.js';
 import { createCleanableMaterial } from '../materials.js';
-import { buildEnvironment, makeSign, makeFenceLine, FENCE_GREEN } from '../environment.js';
+import { buildEnvironment, makeBooth, makeSign, makeFenceLine, makeStairs, FENCE_GREEN } from '../environment.js';
 
 const TAU = Math.PI * 2;
 const GAUGE = 1.2;
@@ -75,7 +75,7 @@ export const WOODIE = {
     for (const [side, id, label, seed] of [[-1, 'timberL', 'Left timber', 37], [1, 'timberR', 'Right timber', 41]]) {
       const mask = dirt.createMask({
         id, label, w: 4096, h: 64, worldU: length, worldV: 1.1,
-        wrapU: true, wrapV: true, seed, leafDensity: 1.3,
+        wrapU: true, wrapV: true, seed, leafDensity: 2.0,
         lookup: (u) => timberOffset(side)(Math.floor(u * N) % N),
       });
       const mat = createCleanableMaterial(
@@ -133,7 +133,7 @@ export const WOODIE = {
     // ---------- trestle-bents (het houten frame) ----------
     const bentAtlas = new CellAtlas(dirt, {
       id: 'bents', label: 'Timber frame', cols: 16, rows: 8,
-      texW: 1024, texH: 512, cellWorld: 3.2, seed: 61, leafDensity: 0.9,
+      texW: 1024, texH: 512, cellWorld: 3.2, seed: 61, leafDensity: 2.0,
     });
     const bentMat = createCleanableMaterial(
       { color: 0x8a6537, metalness: 0.02, roughness: 0.8 }, bentAtlas.mask.texture);
@@ -211,9 +211,28 @@ export const WOODIE = {
       startMeters: 3, bodyColor: 0x4f3722, noseColor: 0x8a2e2e, seatColor: 0x2e2a26,
     }));
     scene.add(makeSign('Timber Howl', { x: 22, z: 12, rotY: -Math.PI / 2.6 }));
+    scene.add(makeBooth(dirt, cleanables, { x: -5.5, z: 8.5, rotY: 0.5 }));
+
+    // stationshekwerk: zijkanten + airgates met instap-gaten, plus trapjes
+    const fenceMat = FENCE_GREEN();
+    const fenceLines = [
+      [[-2, 1.0], [-2, 4.9]],
+      [[18, 1.0], [18, 4.9]],
+      [[-2, 1.0], [0.5, 1.0]],
+      [[2.5, 1.0], [4, 1.0]],
+      [[6, 1.0], [7, 1.0]],
+      [[9, 1.0], [18, 1.0]],
+    ];
+    for (const line of fenceLines) {
+      const fence = makeFenceLine(line, 1.0, fenceMat);
+      fence.position.y = 1.5;
+      scene.add(fence);
+    }
+    scene.add(makeStairs({ x: 2, z: 6.1, h: 1.5, steps: 4 }));
+    scene.add(makeStairs({ x: 14, z: 6.1, h: 1.5, steps: 4 }));
     scene.add(makeFenceLine([[-3, 5.2], [18, 5.2]], 1.0, FENCE_GREEN()).translateY(1.5));
 
-    buildEnvironment(scene, {
+    const env = buildEnvironment(scene, {
       clearFn: (x, z) => {
         for (let i = 0; i < samples.length; i += 3) {
           const p = samples[i].pos;
@@ -228,6 +247,6 @@ export const WOODIE = {
       plaza: { x: 8, z: 12, w: 34, d: 14, queues: [[[0, 9], [14, 9]], [[14, 12], [0, 12]]] },
     });
 
-    return { spawn: { pos: [14, 1.8, 13], yaw: -0.3, pitch: 0.04 } };
+    return { spawn: { pos: [14, 1.7, 13], yaw: -0.3, pitch: 0.04 }, envUpdate: env.update };
   },
 };
