@@ -6,11 +6,13 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CONFIG } from './config.js';
 import { createCleanableMaterial } from './materials.js';
+import { remapUV } from './atlas.js';
 
 const TAU = Math.PI * 2;
 
-/** Buis langs de baan, opgeknipt in chunks. offsetFn(i) → middelpunt van de buis. */
-function buildTubeChunks({ samples, N, offsetFn, radius, radialSegs, chunkSamples }) {
+/** Buis langs de baan, opgeknipt in chunks. offsetFn(i) → middelpunt van de buis.
+ *  phase draait het profiel (π/4 + radialSegs 4 ≈ vierkante houtbalk). */
+export function buildTubeChunks({ samples, N, offsetFn, radius, radialSegs, chunkSamples, phase = 0 }) {
   const geos = [];
   const M = radialSegs;
   for (let i0 = 0; i0 < N; i0 += chunkSamples) {
@@ -26,7 +28,7 @@ function buildTubeChunks({ samples, N, offsetFn, radius, radialSegs, chunkSample
       const s = samples[i % N];
       const center = offsetFn(i % N);
       for (let j = 0; j <= M; j++) {
-        const a = (j / M) * TAU;
+        const a = (j / M) * TAU + phase;
         const dx = Math.cos(a), dy = Math.sin(a);
         const nx = s.right.x * dx + s.up.x * dy;
         const ny = s.right.y * dx + s.up.y * dy;
@@ -56,15 +58,7 @@ function buildTubeChunks({ samples, N, offsetFn, radius, radialSegs, chunkSample
   return geos;
 }
 
-function remapUV(geo, fn) {
-  const uv = geo.attributes.uv;
-  for (let i = 0; i < uv.count; i++) {
-    const [u, v] = fn(uv.getX(i), uv.getY(i));
-    uv.setXY(i, u, v);
-  }
-}
-
-function addChunkMeshes(geos, material, maskId, group, cleanables) {
+export function addChunkMeshes(geos, material, maskId, group, cleanables) {
   for (const geo of geos) {
     const mesh = new THREE.Mesh(geo, material);
     mesh.castShadow = true;
@@ -95,19 +89,19 @@ export function buildTrack(trackData, dirt) {
 
   // ---------- Masks ----------
   const railMaskL = dirt.createMask({
-    id: 'railL', label: 'Linkerrail', w: 8192, h: 64,
+    id: 'railL', label: 'Left rail', w: 8192, h: 64,
     worldU: length, worldV: TAU * C.railRadius,
     wrapU: true, wrapV: true, seed: 11, leafDensity: 1.0,
     lookup: railLookup(-1),
   });
   const railMaskR = dirt.createMask({
-    id: 'railR', label: 'Rechterrail', w: 8192, h: 64,
+    id: 'railR', label: 'Right rail', w: 8192, h: 64,
     worldU: length, worldV: TAU * C.railRadius,
     wrapU: true, wrapV: true, seed: 23, leafDensity: 1.0,
     lookup: railLookup(1),
   });
   const spineMask = dirt.createMask({
-    id: 'spine', label: 'Ruggengraat', w: 8192, h: 128,
+    id: 'spine', label: 'Spine', w: 8192, h: 128,
     worldU: length, worldV: TAU * C.spineRadius,
     wrapU: true, wrapV: true, seed: 37, leafDensity: 1.4,
     lookup: (u) => spineOffset(Math.floor(u * N) % N),
@@ -137,7 +131,7 @@ export function buildTrack(trackData, dirt) {
   const tieCols = 32, tieRows = 16;
   const tiePositions = [];
   const tieMask = dirt.createMask({
-    id: 'ties', label: 'Dwarsbalken', w: 2048, h: 128,
+    id: 'ties', label: 'Crossties', w: 2048, h: 128,
     worldU: tieCols * 1.6, worldV: tieRows * 0.6,
     cellsU: tieCols, cellsV: tieRows, seed: 53, leafDensity: 1.2,
     lookup: (u, v) => {
@@ -214,7 +208,7 @@ export function buildTrack(trackData, dirt) {
 
   const supportPositions = [];
   const supportMask = dirt.createMask({
-    id: 'supports', label: 'Steunpilaren', w: 1024, h: 256,
+    id: 'supports', label: 'Supports', w: 1024, h: 256,
     worldU: S.maxCount * TAU * S.radius, worldV: S.maxHeight,
     cellsU: S.maxCount, wrapU: true, seed: 67, leafDensity: 0.5,
     lookup: (u) => {
@@ -225,10 +219,8 @@ export function buildTrack(trackData, dirt) {
   const supportMat = createCleanableMaterial(
     { color: CONFIG.colors.support, metalness: 0.3, roughness: 0.35 }, supportMask.texture
   );
-  const concreteMat = new THREE.MeshStandardMaterial({ color: 0x8d8a84, roughness: 0.9 });
 
   const supportGeos = [];
-  const footerGeos = [];
   const yAxis = new THREE.Vector3(0, 1, 0);
   supports.forEach((cand, col) => {
     const sc = cand.spineCenter;
@@ -259,27 +251,23 @@ export function buildTrack(trackData, dirt) {
       supportGeos.push(arm);
     }
 
+    // betonvoet — deelt de atlas-cel met de onderkant van de kolom
     const footer = new THREE.BoxGeometry(0.95, 0.5, 0.95);
+    remapUV(footer, (u, v) => intoCell(u, v, 0.5 / S.maxHeight));
     footer.translate(bx, 0.25, bz);
-    footerGeos.push(footer);
+    supportGeos.push(footer);
 
     supportPositions.push(new THREE.Vector3(bx, topY * 0.55, bz));
   });
 
-  for (let c = 0; c < supportGeos.length; c += 10) {
-    const merged = mergeGeometries(supportGeos.slice(c, c + 10));
+  for (let c = 0; c < supportGeos.length; c += 12) {
+    const merged = mergeGeometries(supportGeos.slice(c, c + 12));
     const mesh = new THREE.Mesh(merged, supportMat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData.maskId = 'supports';
     group.add(mesh);
     cleanables.push(mesh);
-  }
-  if (footerGeos.length) {
-    const footers = new THREE.Mesh(mergeGeometries(footerGeos), concreteMat);
-    footers.castShadow = true;
-    footers.receiveShadow = true;
-    group.add(footers);
   }
 
   return { group, cleanables };

@@ -1,85 +1,98 @@
-# RIDECLEANER.md — Ride Cleaner Simulator
+# RIDECLEANER.md — Ride Wash Simulator
 > Source of truth voor dit project.
 
 ## STATUS
-**Fase: SPEELBAAR — v1 compleet (one-shot build, 11 juni 2026)**
+**Fase: SPEELBAAR — v2 "Ride Wash Simulator" met 5 levels (11 juni 2026)**
 
-PowerWash Simulator-stijl game: spuit de stalen achtbaan **Steel Comet** schoon
-met een hogedrukspuit. Volledig 3D (Three.js), first-person, draait in de browser
-zonder build step. Geverifieerd in Chrome: 60 FPS, geen console errors, alle
-schoonmaak-mechanics werken.
+PowerWash Simulator-stijl game, volledig 3D (Three.js), first-person, Engels,
+browser-based zonder build step. Grimey staal/roest-huisstijl (naar Thomas'
+logo). Vijf levels met unlock-progressie. Geverifieerd in Chrome: ~60 FPS op
+het zwaarste level, schone console, alle schoonmaak-mechanics getest.
 
 ## SPELEN
 ```bash
 python3 -m http.server 8080    # of: npm run serve
 # → open http://localhost:8080
 ```
-Besturing: muis kijken · LMB sprayen · WASD bewegen · Shift sneller ·
-Spatie/C omhoog/omlaag · F vuilzoeker-baken · Esc pauze.
+Controls: mouse look · LMB spray · WASD · Shift sprint · Space/C up/down ·
+F dirt finder · Esc pause.
+
+**Logo:** sla Thomas' logo-afbeelding op als `assets/logo.png` — het menu
+gebruikt hem automatisch (tekst-fallback als hij ontbreekt).
+
+## LEVELS (volgorde = unlock-volgorde, localStorage `rws_done`)
+1. **Carousel** — platform, middenkolom, luifel, paardjes & palen (4 secties)
+2. **Swinging Ship** — A-frames, hangarmen, romp, bankjes (4 secties)
+3. **Top Spin** — torens, draaiarmen, gondel, vloerplatform (4 secties)
+4. **Wooden Coaster "Timber Howl"** — eigen layout (~300m), stalen strips,
+   houtstapels L/R, ledgers, trestle-bents, perron (7 secties)
+5. **Steel Coaster "Steel Comet"** — rails, ruggengraat, dwarsbalken, steunen
+   (incl. betonvoeten), lifthill-catwalk + ketting, perron, stationsdak (8 secties)
+
+Win = alle secties klaar → volgende level unlockt. Eén level per page-load
+via `?level=<id>` (geen scene-teardown-bugs).
 
 ## ARCHITECTUUR
 Stack: **Three.js 0.170 via CDN import map + vanilla ES modules** (geen bundler).
 
 ```
-index.html          UI-skelet (HUD, overlays, CSS) + import map
-src/config.js       Alle tunables (baan, spray, speler, kleuren)
-src/layout.js       Baanontwerp: gesloten centripetal Catmull-Rom + frames.
-                    Banking = "gevoelde verticaal" (g + centripetale kracht
-                    uit snelheidsprofiel via energiebehoud) → realistisch
-                    soepele bochten, gesmoothed, max 65°.
-src/track.js        Geometrie: 2 buisrails + ruggengraat + dwarsbalken +
-                    steunpilaren (wijken uit met diagonale arm onder de helix).
-                    Alles in chunks (~100 samples) voor snelle raycasts.
-src/dirt.js         DirtSystem: per oppervlak een RGBA DataTexture-masker
-                    (R=vuil, G=blad, B=variatie). Anisotroop elliptisch gummen
-                    met cell/wrap-logica; incrementele progressie-telling;
-                    secties voltooien automatisch bij 98,5% (geen pixel-jacht).
-src/materials.js    MeshStandardMaterial + onBeforeCompile vuil-overlay
-                    (één gedeeld GPU-programma, uniforms per materiaal).
-src/washer.js       Spuitpistool (procedureel model), raycast-spray (5 rays/
-                    frame in kegel), straal- en mist-particles.
-src/player.js       Pointer lock FPS-besturing + hoogwerker (vrij vliegen).
-src/walkway.js      Lifthill-catwalk: roosterplanken, stringers, leuningen
-                    met dubbele handrail + liftketting tussen de rails.
-src/environment.js  Lucht, wolken, zon+schaduw, grond, bos (~120 bomen met
-                    rejection sampling rond de baan), plaza + wachtrij-hekjes,
-                    parkhek, station (perron is schoonmaakbaar), parkbord.
-src/audio.js        Procedurele WebAudio (spray-ruis, wind, dingetjes, win).
-src/ui.js           HUD: voortgang totaal + per sectie, tijd, waterverbruik.
-src/main.js         Bootstrap + game-loop + vuilzoeker-baken (F).
+index.html            UI-skelet, grimey staal/roest-thema, levelmenu, import map
+src/config.js         Tunables (baan, spray, speler, kleuren)
+src/layout.js         Herbruikbare baan-wiskunde: centripetal Catmull-Rom +
+                      banking via gevoelde verticaal; steelCometPoints() export
+src/track.js          Stalen coaster-builder; exporteert buildTubeChunks
+                      (met profiel-phase: 4 segs + π/4 = houten balk)
+src/walkway.js        Lifthill-catwalk + ketting, schoonmaakbaar (CellAtlas)
+src/atlas.js          remapUV + CellAtlas: elk los onderdeel een eigen
+                      dirt-cel → alles individueel schoonmaakbaar
+src/dirt.js           DirtSystem (RGBA DataTexture-maskers, anisotroop gummen,
+                      incrementele progressie, secties auto-klaar bij 98,5%)
+src/materials.js      Vuil-overlay via onBeforeCompile (één GPU-programma)
+src/washer.js         Spuitpistool, raycast-spray, straal+mist particles
+src/player.js         Pointer lock FPS + vrij omhoog/omlaag
+src/environment.js    Gedeelde wereld (lucht, wolken, zon, bos met rejection
+                      sampling, hekken, plaza, borden, coaster-station)
+src/audio.js          Procedurele WebAudio
+src/ui.js             HUD + levelmenu + win/next (Engels)
+src/levels/index.js   Register + progressie (localStorage)
+src/levels/*.js       carousel, ship, topspin, woodie, steelcomet
+src/main.js           Bootstrap, level-keuze, PMREM-reflecties, game-loop
 ```
 
-### Baanlayout (Steel Comet, ~441 m)
-Station → kettinglift (26 m) → eerste drop met bocht rechts → dal →
-gebankte turnaround → airtime-heuvel → dalende helix (510°, r=13) →
-remstraat → station. Gesloten lus, alle overgangen via centripetal
-Catmull-Rom (geen knikken).
+## ONLINE ZETTEN (statische site, geen server nodig)
+- **Vercel** (aanrader): `vercel` in de projectmap (eerst `vercel login`),
+  daarna `vercel --prod`. Klaar — publieke URL.
+- Alternatieven: Netlify drag&drop (netlify.com/drop), GitHub Pages
+  (repo → Settings → Pages), Cloudflare Pages.
 
-### Schoonmaakbare secties (6 dirt-masks)
-Linkerrail, Rechterrail, Ruggengraat, Dwarsbalken, Steunpilaren, Perron.
-Win-conditie: alle secties klaar → winscherm met tijd + literverbruik.
+## GRAPHICS
+- In-engine gedaan: PMREM RoomEnvironment-reflecties (metaal/lak), ACES tone
+  mapping, gedempt grimey palet, patchy vuil, schaduwen, mist.
+- Betere assets downloaden (gratis): **Poly Haven** (HDRI's + PBR-texturen),
+  **ambientCG** (PBR-texturen CC0), **Kenney.nl** (game-assets CC0),
+  **Quaternius** (low-poly modellen CC0), **Sketchfab** (CC-licentie filteren).
+  GLTF-modellen laden kan met THREE.GLTFLoader (addons staan al in de import map).
 
 ## ACTIVE WORK
-- (geen — v1 af; zie IDEAS)
+- (geen — v2 af; zie IDEAS)
 
 ## IDEAS
-- Vuil-detail omhoog (grotere maskers of detail-noise in shader)
-- Natte glans-laag die kort nadruipt na sprayen
-- Meerdere nozzles (breed/smal) zoals PowerWash Simulator
-- Trein op de baan als decor / einde-animatie na winst
-- Save-game (masker → localStorage is te groot; cleaned-count per sectie kan wel)
+- Echte HDRI-lucht (Poly Haven) i.p.v. gradient
+- Natte glans na sprayen; meerdere nozzles; trein/voertuig-decor
+- Per-level besttijden (localStorage), totaal-voortgangsscherm
+- Mobile/touch support
 
 ## CONTEXT / BESLISSINGEN
-- Geen bundler: file://-CORS blokkeert lokale modules, dus statische server nodig.
-- Drie.js r170 gepind via jsdelivr import map.
-- Maskers zijn Uint8Array + DataTexture (geen canvas): goedkoop gummen op CPU,
-  upload alleen bij wijziging; mips + anisotropy 8 tegen glinster op afstand.
-- Raycast-chunks i.p.v. three-mesh-bvh: geen extra dependency nodig op deze schaal.
+- file://-CORS blokkeert lokale ES modules → statische server nodig.
+- Reload-per-level i.p.v. scene-teardown: simpel en bugvrij.
+- Maskers = Uint8Array + DataTexture; raycast-chunks i.p.v. BVH-dependency.
+- Logo komt van Thomas (chat-afbeelding) → `assets/logo.png`, met CSS-fallback.
 
 ## ARCHIEF
-- **2026-06-11** — One-shot build v1: complete game, in browser geverifieerd
-  (60 FPS, mechanics getest via debug-hook `window.__game`).
-- **2026-06-11** — v1.1 realisme-upgrade op verzoek: lifthill-walkway met
-  handrails + liftketting, ~120 bomen (den + loofboom, kleurvariatie),
-  wolken, entreeplaza met wachtrij-hekjes, parkhek, perronhek.
-  Opnieuw geverifieerd: 60 FPS, schone console.
+- **2026-06-11** — v1: one-shot build Steel Comet, geverifieerd 60 FPS.
+- **2026-06-11** — v1.1: lifthill-walkway, ~120 bomen, wolken, plaza, hekken.
+- **2026-06-11** — v2: rebrand "Ride Wash Simulator" (grimey thema, logo-slot),
+  Engelse UI, 5 levels met unlock-progressie (carousel → ship → top spin →
+  woodie → steel), alles schoonmaakbaar (walkway, ketting, betonvoeten,
+  stationsdak), CellAtlas-systeem, PMREM-reflecties, gedempt gritty palet.
+  Alle levels in browser geverifieerd (~60 FPS, schone console).

@@ -1,5 +1,5 @@
-// Omgeving: lucht, wolken, licht, grond, bos, plaza met wachtrij, parkhek,
-// station (met schoonmaakbaar perron) en het parkbord.
+// Gedeelde omgeving voor alle levels: lucht, wolken, licht, grond, bos,
+// hekken, plaza en borden. Per level configureerbaar via buildEnvironment-opts.
 // Geen gameplay-logica hier — alleen de wereld.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -30,8 +30,8 @@ function makeSky() {
     side: THREE.BackSide,
     depthWrite: false,
     uniforms: {
-      topColor: { value: new THREE.Color(0x4f9fe8) },
-      bottomColor: { value: new THREE.Color(0xd9ecfb) },
+      topColor: { value: new THREE.Color(0x4584bd) },
+      bottomColor: { value: new THREE.Color(0xccdbe8) },
     },
     vertexShader: `
       varying vec3 vWorld;
@@ -82,34 +82,23 @@ function makeClouds() {
   return group;
 }
 
-// Bos: veel bomen, verspreid met rejection sampling zodat ze nooit in of
-// vlak naast de baan staan. Twee soorten (loofboom + den), met kleurvariatie.
-function makeForest(samples) {
+// Bos: bomen via rejection sampling, nooit in/naast de attractie (clearFn).
+function makeForest({ clearFn, count, area }) {
   const trunkGeos = [];
   const leafBuckets = [[], [], []];
   const leafMats = [
-    new THREE.MeshStandardMaterial({ color: 0x3f6b2a, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0x4d7a30, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0x32562b, roughness: 0.9 }),
+    new THREE.MeshStandardMaterial({ color: 0x2f5222, roughness: 0.9 }),
+    new THREE.MeshStandardMaterial({ color: 0x3a5e26, roughness: 0.9 }),
+    new THREE.MeshStandardMaterial({ color: 0x274421, roughness: 0.9 }),
   ];
-
-  const clearOfTrack = (x, z) => {
-    for (let i = 0; i < samples.length; i += 3) {
-      const p = samples[i].pos;
-      const dx = p.x - x, dz = p.z - z;
-      if (dx * dx + dz * dz < 6.5 * 6.5) return false;
-    }
-    return true;
-  };
-  const inStationZone = (x, z) => x > -10 && x < 32 && z > -6 && z < 22;
 
   const placed = [];
   let tries = 0;
-  while (placed.length < 120 && tries < 4000) {
+  while (placed.length < count && tries < count * 40) {
     tries++;
-    const x = -72 + Math.random() * 215;   // [-72, 143]
-    const z = -93 + Math.random() * 130;   // [-93, 37]
-    if (inStationZone(x, z) || !clearOfTrack(x, z)) continue;
+    const x = area.x0 + Math.random() * (area.x1 - area.x0);
+    const z = area.z0 + Math.random() * (area.z1 - area.z0);
+    if (!clearFn(x, z)) continue;
     let tooClose = false;
     for (const [px, pz] of placed) {
       const dx = px - x, dz = pz - z;
@@ -120,7 +109,6 @@ function makeForest(samples) {
 
     const bucket = leafBuckets[(Math.random() * 3) | 0];
     if (Math.random() < 0.45) {
-      // den: stam + 2 gestapelde kegels
       const h = 3 + Math.random() * 3;
       const trunk = new THREE.CylinderGeometry(0.16, 0.26, h, 6);
       trunk.translate(x, h / 2, z);
@@ -132,7 +120,6 @@ function makeForest(samples) {
       cone2.translate(x, h + r * 1.9, z);
       bucket.push(cone1, cone2);
     } else {
-      // loofboom: stam + 3 bollen
       const h = 3.5 + Math.random() * 4;
       const trunk = new THREE.CylinderGeometry(0.2, 0.34, h, 6);
       trunk.translate(x, h / 2, z);
@@ -147,12 +134,14 @@ function makeForest(samples) {
   }
 
   const group = new THREE.Group();
-  const trunks = new THREE.Mesh(
-    mergeGeometries(trunkGeos),
-    new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 0.95 })
-  );
-  trunks.castShadow = true;
-  group.add(trunks);
+  if (trunkGeos.length) {
+    const trunks = new THREE.Mesh(
+      mergeGeometries(trunkGeos),
+      new THREE.MeshStandardMaterial({ color: 0x4f3722, roughness: 0.95 })
+    );
+    trunks.castShadow = true;
+    group.add(trunks);
+  }
   leafBuckets.forEach((geos, i) => {
     if (!geos.length) return;
     const m = new THREE.Mesh(mergeGeometries(geos), leafMats[i]);
@@ -162,8 +151,8 @@ function makeForest(samples) {
   return group;
 }
 
-// Hekje: posten + 2 horizontale buizen langs een lijst hoekpunten.
-function makeFenceLine(points, height, mat) {
+// Hekje: posten + 2 horizontale buizen langs een lijst hoekpunten [x,z].
+export function makeFenceLine(points, height, mat) {
   const geos = [];
   for (let p = 0; p < points.length - 1; p++) {
     const a = new THREE.Vector3(points[p][0], 0, points[p][1]);
@@ -192,30 +181,29 @@ function makeFenceLine(points, height, mat) {
   return mesh;
 }
 
-function makePlaza() {
+export const FENCE_GREEN = () =>
+  new THREE.MeshStandardMaterial({ color: 0x2e4d3a, metalness: 0.6, roughness: 0.5 });
+
+export function makePlaza({ x, z, w, d, queues = [] }) {
   const group = new THREE.Group();
   const concrete = makeNoiseTexture('#9b958c', (r) => {
     const g = 120 + r * 60;
     return [g, g * 0.97, g * 0.92];
-  }, 10);
+  }, Math.max(4, w / 4));
   const plaza = new THREE.Mesh(
-    new THREE.PlaneGeometry(42, 18),
+    new THREE.PlaneGeometry(w, d),
     new THREE.MeshStandardMaterial({ map: concrete, roughness: 0.95 })
   );
   plaza.rotation.x = -Math.PI / 2;
-  plaza.position.set(10, 0.02, 13);
+  plaza.position.set(x, 0.02, z);
   plaza.receiveShadow = true;
   group.add(plaza);
-
-  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x2e4d3a, metalness: 0.6, roughness: 0.5 });
-  // wachtrij-slingers op de plaza
-  group.add(makeFenceLine([[0, 8], [16, 8]], 1.0, fenceMat));
-  group.add(makeFenceLine([[16, 11], [0, 11]], 1.0, fenceMat));
-  group.add(makeFenceLine([[0, 14], [16, 14]], 1.0, fenceMat));
+  const fenceMat = FENCE_GREEN();
+  for (const line of queues) group.add(makeFenceLine(line, 1.0, fenceMat));
   return group;
 }
 
-function makeSign() {
+export function makeSign(title, { x, z, rotY = 0 }) {
   const c = document.createElement('canvas');
   c.width = 1024; c.height = 320;
   const ctx = c.getContext('2d');
@@ -225,12 +213,12 @@ function makeSign() {
   ctx.lineWidth = 10;
   ctx.strokeRect(14, 14, 996, 292);
   ctx.fillStyle = '#ffd866';
-  ctx.font = 'bold 110px "Avenir Next", sans-serif';
+  ctx.font = 'bold 96px "Avenir Next", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('STEEL COMET', 512, 150);
+  ctx.fillText(title.toUpperCase(), 512, 145);
   ctx.fillStyle = '#9be8ff';
-  ctx.font = '52px "Avenir Next", sans-serif';
-  ctx.fillText('— gesloten voor grote schoonmaak —', 512, 245);
+  ctx.font = '50px "Avenir Next", sans-serif';
+  ctx.fillText('— closed for deep cleaning —', 512, 240);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
 
@@ -242,24 +230,25 @@ function makeSign() {
       new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }),
       sideMat]
   );
-  board.position.set(26, 3.1, 13);
-  board.rotation.y = -Math.PI / 2.4;
+  board.position.set(x, 3.1, z);
+  board.rotation.y = rotY;
+  board.castShadow = true;
+  group.add(board);
   const postMat = new THREE.MeshStandardMaterial({ color: 0x39424d, roughness: 0.5, metalness: 0.5 });
   for (const off of [-2.8, 2.8]) {
     const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 2.4, 8), postMat);
-    post.position.set(26 - Math.sin(-Math.PI / 2.4) * off * -1, 1.2, 13 + Math.cos(-Math.PI / 2.4) * off);
+    post.position.set(x + Math.cos(rotY) * off, 1.2, z - Math.sin(rotY) * off);
     group.add(post);
   }
-  board.castShadow = true;
-  group.add(board);
   return group;
 }
 
-function makeStation(dirt, cleanables) {
+/** Station van de stalen coaster (perron + dak zijn schoonmaakbaar). */
+export function makeStation(dirt, cleanables) {
   const group = new THREE.Group();
 
   const platformMask = dirt.createMask({
-    id: 'platform', label: 'Perron', w: 512, h: 128,
+    id: 'platform', label: 'Platform', w: 512, h: 128,
     worldU: 22, worldV: 4.5, seed: 83, leafDensity: 2.2,
     lookup: (u, v) => new THREE.Vector3(-3 + u * 22, 1.6, 1.0 + v * 4.5),
   });
@@ -280,33 +269,45 @@ function makeStation(dirt, cleanables) {
     col.castShadow = true;
     group.add(col);
   }
-  const roof = new THREE.Mesh(
-    new THREE.BoxGeometry(23.5, 0.25, 8.2),
-    new THREE.MeshStandardMaterial({ color: 0x1d3a5f, metalness: 0.3, roughness: 0.5 })
+
+  // stationsdak — ligt vol bladeren, dus ook schoonmaakbaar
+  const roofMask = dirt.createMask({
+    id: 'roof', label: 'Station roof', w: 512, h: 256,
+    worldU: 23.5, worldV: 8.2, seed: 101, leafDensity: 3.0,
+    lookup: (u, v) => new THREE.Vector3(-3.75 + u * 23.5, 6.0, -2.55 + v * 8.2),
+  });
+  const roofMat = createCleanableMaterial(
+    { color: 0x1d3a5f, metalness: 0.3, roughness: 0.5 }, roofMask.texture
   );
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(23.5, 0.25, 8.2), roofMat);
   roof.position.set(8, 5.75, 1.55);
   roof.castShadow = true;
+  roof.userData.maskId = 'roof';
   group.add(roof);
+  cleanables.push(roof);
 
-  // hekwerk op de achterrand van het perron
-  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x2e4d3a, metalness: 0.6, roughness: 0.5 });
-  const fence = makeFenceLine([[-3, 5.4], [19, 5.4]], 1.0, fenceMat);
+  const fence = makeFenceLine([[-3, 5.4], [19, 5.4]], 1.0, FENCE_GREEN());
   fence.position.y = 1.5;
   group.add(fence);
 
   return group;
 }
 
-export function buildEnvironment(scene, dirt, cleanables, trackData) {
-  scene.background = new THREE.Color(0xbcdcf5);
-  scene.fog = new THREE.Fog(0xc9e2f6, 150, 430);
+/**
+ * Gedeelde wereld voor elk level.
+ * @param {object} o { clearFn(x,z)→bool, treeCount, treeArea{x0,x1,z0,z1},
+ *                     fencePts [[x,z],...], plaza {x,z,w,d,queues} | null }
+ */
+export function buildEnvironment(scene, o) {
+  scene.background = new THREE.Color(0xafc9de);
+  scene.fog = new THREE.Fog(0xbcd0e0, 140, 420);
   scene.add(makeSky());
   scene.add(makeClouds());
 
-  const hemi = new THREE.HemisphereLight(0xbfd9f2, 0x55663d, 0.85);
+  const hemi = new THREE.HemisphereLight(0xb6cfe4, 0x46532f, 0.6);
   scene.add(hemi);
 
-  const sun = new THREE.DirectionalLight(0xfff2dd, 2.6);
+  const sun = new THREE.DirectionalLight(0xffeacc, 2.25);
   sun.position.set(90, 120, 70);
   sun.target.position.set(40, 0, -28);
   sun.castShadow = true;
@@ -321,7 +322,7 @@ export function buildEnvironment(scene, dirt, cleanables, trackData) {
   sun.shadow.normalBias = 0.6;
   scene.add(sun, sun.target);
 
-  const grass = makeNoiseTexture('#5e7d43', (r) => {
+  const grass = makeNoiseTexture('#465633', (r) => {
     const g = 90 + r * 60;
     return [g * 0.75, g, g * 0.5];
   }, 60);
@@ -333,15 +334,10 @@ export function buildEnvironment(scene, dirt, cleanables, trackData) {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  scene.add(makeForest(trackData.samples));
-  scene.add(makePlaza());
-  scene.add(makeSign());
-  scene.add(makeStation(dirt, cleanables));
-
-  // parkhek rond het hele terrein
-  const parkFenceMat = new THREE.MeshStandardMaterial({ color: 0x3a4046, metalness: 0.7, roughness: 0.45 });
-  scene.add(makeFenceLine(
-    [[-42, 24], [-42, -72], [126, -72], [126, 24], [30, 24]],
-    1.15, parkFenceMat
-  ));
+  scene.add(makeForest({ clearFn: o.clearFn, count: o.treeCount, area: o.treeArea }));
+  if (o.plaza) scene.add(makePlaza(o.plaza));
+  if (o.fencePts) {
+    scene.add(makeFenceLine(o.fencePts, 1.15,
+      new THREE.MeshStandardMaterial({ color: 0x3a4046, metalness: 0.7, roughness: 0.45 })));
+  }
 }

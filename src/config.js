@@ -26,13 +26,13 @@ export const CONFIG = {
     maxHeight: 30,            // normalisatie hoogte voor dirt-uv
   },
   colors: {
-    rail: 0xc8242c,           // kersenrood geverfd staal
-    spine: 0xc8242c,
-    tie: 0x3c4148,            // donkergrijs
-    support: 0xe8e4da,        // gebroken wit
-    platform: 0x9a948c,       // beton
-    dust: [0.40, 0.345, 0.26],  // basis vuilkleur (linear-ish)
-    leaf: [0.23, 0.30, 0.10],   // blad/groen-bruin
+    rail: 0xa61e26,           // verweerd dieprood staal
+    spine: 0xa61e26,
+    tie: 0x33373d,            // donkergrijs
+    support: 0xcfc9bb,        // vuilwit
+    platform: 0x8d8780,       // beton
+    dust: [0.155, 0.125, 0.095], // basis vuilkleur (donker grimey bruingrijs)
+    leaf: [0.095, 0.125, 0.045], // blad/groen-bruin, donker
   },
   spray: {
     range: 15,                // effectieve reikwijdte (m)

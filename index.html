@@ -1,43 +1,101 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ride Cleaner Simulator — Steel Comet</title>
+  <title>Ride Wash Simulator</title>
   <link rel="icon" href="data:," />
   <style>
+    :root {
+      --steel-dark: #0d161f;
+      --steel: #1c2e3f;
+      --steel-light: #5f8cab;
+      --steel-pale: #9cc4dd;
+      --rust: #c1561f;
+      --rust-bright: #e07b33;
+      --rust-dark: #7e3614;
+      --paper: #e8e4da;
+      --grime: #4a3525;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #0b1320; }
-    body { font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; color: #eaf2fb; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--steel-dark); }
+    body { font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; color: var(--paper); }
     canvas { display: block; }
 
     /* ---------- overlays ---------- */
     .overlay {
       position: fixed; inset: 0; z-index: 20;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: radial-gradient(ellipse at 50% 35%, rgba(20, 42, 70, 0.92), rgba(7, 12, 22, 0.96));
-      text-align: center; cursor: pointer; user-select: none;
+      background:
+        radial-gradient(ellipse at 50% 30%, rgba(38, 62, 86, 0.92), rgba(10, 16, 24, 0.97)),
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0 2px, transparent 2px 6px);
+      text-align: center; user-select: none;
     }
     .overlay.hidden { display: none; }
-    .overlay h1 {
-      font-size: 52px; letter-spacing: 4px; font-weight: 800;
-      background: linear-gradient(90deg, #4dc3ff, #9be8ff, #4dc3ff);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-      text-shadow: 0 0 40px rgba(77, 195, 255, 0.25);
-    }
-    .overlay h2 { font-size: 19px; font-weight: 500; color: #aac6e2; margin-top: 10px; }
-    .overlay .panel {
-      margin-top: 34px; padding: 22px 34px; border-radius: 14px;
-      background: rgba(13, 24, 40, 0.75); border: 1px solid rgba(120, 180, 240, 0.25);
-      font-size: 15px; line-height: 2; color: #cfe2f5; text-align: left;
-    }
-    .overlay .panel b { color: #8fd4ff; display: inline-block; min-width: 110px; }
-    .overlay .cta { margin-top: 30px; font-size: 17px; color: #ffd866; animation: pulse 1.6s ease-in-out infinite; }
-    @keyframes pulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
 
-    #winOverlay h1 { background: linear-gradient(90deg, #ffd866, #fff3c4, #ffd866); -webkit-background-clip: text; background-clip: text; }
-    #winStats { margin-top: 24px; font-size: 18px; line-height: 2; color: #d8e8f8; }
-    #winOverlay .cta { color: #8fd4ff; }
+    #logo { width: min(380px, 60vw); image-rendering: auto; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.6)); }
+    #logoFallback {
+      display: none; font-size: 50px; font-weight: 900; letter-spacing: 3px;
+      background: linear-gradient(180deg, var(--steel-pale), var(--steel-light) 55%, #38576f);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 3px 0 rgba(0,0,0,0.35);
+    }
+    #logoFallback em { font-style: normal; color: var(--rust-bright); -webkit-text-fill-color: var(--rust-bright); }
+
+    .tagline { margin-top: 8px; font-size: 16px; color: var(--steel-pale); opacity: 0.9; }
+
+    .panel {
+      margin-top: 20px; padding: 16px 26px; border-radius: 10px;
+      background: linear-gradient(180deg, rgba(34, 52, 70, 0.85), rgba(20, 32, 45, 0.9));
+      border: 1px solid rgba(140, 180, 215, 0.22);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 24px rgba(0,0,0,0.45);
+      font-size: 14px; line-height: 1.9; color: #c8d8e6; text-align: left;
+    }
+    .panel b { color: var(--rust-bright); display: inline-block; min-width: 96px; font-weight: 700; }
+
+    .btn {
+      cursor: pointer; border: none; font-family: inherit;
+      padding: 13px 38px; margin-top: 22px; border-radius: 8px;
+      font-size: 18px; font-weight: 800; letter-spacing: 2px; color: #fff3e8;
+      background: linear-gradient(180deg, var(--rust-bright), var(--rust) 55%, var(--rust-dark));
+      border: 1px solid #5d2810; border-bottom-width: 3px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 6px 18px rgba(0,0,0,0.5);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      transition: transform 0.08s ease, filter 0.15s ease;
+    }
+    .btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.secondary {
+      background: linear-gradient(180deg, #4a708e, #34536e 55%, #233a4f);
+      border-color: #1a2c3d;
+    }
+
+    /* ---------- level menu ---------- */
+    #levelMenu { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; justify-content: center; }
+    .level-card {
+      cursor: pointer; width: 132px; padding: 12px 8px 10px; border-radius: 9px;
+      background: linear-gradient(180deg, rgba(48, 70, 92, 0.9), rgba(26, 40, 55, 0.95));
+      border: 1px solid rgba(140, 180, 215, 0.28); border-bottom-width: 3px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 5px 14px rgba(0,0,0,0.4);
+      transition: transform 0.1s ease, filter 0.15s ease;
+    }
+    .level-card:hover { filter: brightness(1.15); transform: translateY(-2px); }
+    .level-card .num {
+      font-size: 11px; letter-spacing: 2px; color: var(--steel-pale); opacity: 0.8;
+    }
+    .level-card .name { font-size: 14px; font-weight: 700; margin-top: 3px; color: var(--paper); }
+    .level-card .state { font-size: 11px; margin-top: 5px; color: var(--rust-bright); font-weight: 600; }
+    .level-card.current { border-color: var(--rust-bright); box-shadow: 0 0 14px rgba(224, 123, 51, 0.35), inset 0 1px 0 rgba(255,255,255,0.07); }
+    .level-card.done .state { color: #79c97f; }
+    .level-card.locked { cursor: not-allowed; filter: grayscale(0.8) brightness(0.55); }
+    .level-card.locked:hover { transform: none; }
+
+    #winStats { margin-top: 20px; font-size: 17px; line-height: 2; color: #d8e2ea; }
+    #winTitle {
+      font-size: 46px; font-weight: 900; letter-spacing: 3px;
+      background: linear-gradient(180deg, #ffe9b0, var(--rust-bright) 70%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
 
     /* ---------- HUD ---------- */
     #hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: none; }
@@ -46,52 +104,62 @@
     #crosshair {
       position: absolute; left: 50%; top: 50%; width: 6px; height: 6px;
       transform: translate(-50%, -50%); border-radius: 50%;
-      background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 6px rgba(140, 210, 255, 0.9), 0 0 0 7px rgba(160, 215, 255, 0.18);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 0 6px rgba(156, 196, 221, 0.95), 0 0 0 7px rgba(156, 196, 221, 0.16);
     }
 
-    #progressWrap {
-      position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
-      width: 420px; text-align: center;
+    #progressWrap { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: 420px; text-align: center; }
+    #progressLabel {
+      font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--steel-pale);
+      margin-bottom: 6px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
-    #progressLabel { font-size: 13px; letter-spacing: 2px; color: #bcd8f0; margin-bottom: 6px; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
     #progressBar {
-      height: 14px; border-radius: 8px; overflow: hidden;
-      background: rgba(8, 16, 28, 0.65); border: 1px solid rgba(140, 200, 255, 0.35);
+      height: 15px; border-radius: 4px; overflow: hidden;
+      background: rgba(10, 18, 26, 0.7); border: 1px solid rgba(140, 180, 215, 0.4);
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.6);
     }
     #progressFill {
       height: 100%; width: 0%;
-      background: linear-gradient(90deg, #2fa8ff, #6fe3ff);
-      box-shadow: 0 0 12px rgba(80, 190, 255, 0.6); transition: width 0.25s ease;
+      background: linear-gradient(180deg, #6fc3e8, #2f87b5 60%, #1f5f84);
+      box-shadow: 0 0 12px rgba(80, 170, 220, 0.5); transition: width 0.25s ease;
+    }
+
+    #levelName {
+      position: absolute; top: 16px; left: 18px; font-size: 13px; font-weight: 700;
+      letter-spacing: 2px; color: var(--rust-bright); text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
     #sections {
-      position: absolute; top: 18px; right: 18px; width: 215px;
-      background: rgba(8, 16, 28, 0.6); border: 1px solid rgba(120, 180, 240, 0.2);
-      border-radius: 10px; padding: 12px 14px; font-size: 12.5px;
+      position: absolute; top: 16px; right: 16px; width: 215px;
+      background: linear-gradient(180deg, rgba(28, 44, 60, 0.78), rgba(16, 26, 38, 0.82));
+      border: 1px solid rgba(140, 180, 215, 0.22); border-radius: 8px; padding: 11px 13px; font-size: 12.5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     }
     #sections .row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
-    #sections .name { flex: 0 0 92px; color: #c4daf0; }
-    #sections .bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; }
-    #sections .bar i { display: block; height: 100%; width: 0%; background: #56c8ff; border-radius: 3px; transition: width 0.3s; }
-    #sections .row.done .name { color: #7be08c; }
-    #sections .row.done .bar i { background: #7be08c; }
+    #sections .name { flex: 0 0 96px; color: #c2d4e2; }
+    #sections .bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    #sections .bar i { display: block; height: 100%; width: 0%; background: #56a8d8; border-radius: 3px; transition: width 0.3s; }
+    #sections .row.done .name { color: #79c97f; }
+    #sections .row.done .bar i { background: #79c97f; }
 
     #stats {
-      position: absolute; bottom: 16px; left: 18px;
-      background: rgba(8, 16, 28, 0.6); border: 1px solid rgba(120, 180, 240, 0.2);
-      border-radius: 10px; padding: 10px 16px; font-size: 13px; color: #bcd8f0; line-height: 1.8;
+      position: absolute; bottom: 15px; left: 18px;
+      background: linear-gradient(180deg, rgba(28, 44, 60, 0.78), rgba(16, 26, 38, 0.82));
+      border: 1px solid rgba(140, 180, 215, 0.22);
+      border-radius: 8px; padding: 9px 15px; font-size: 13px; color: #c2d4e2; line-height: 1.8;
     }
-    #stats b { color: #8fd4ff; }
+    #stats b { color: var(--rust-bright); }
 
     #hint {
-      position: absolute; bottom: 16px; right: 18px; font-size: 12px; color: rgba(190, 215, 240, 0.65);
+      position: absolute; bottom: 15px; right: 18px; font-size: 12px; color: rgba(170, 198, 220, 0.6);
       text-shadow: 0 1px 3px rgba(0,0,0,0.8); text-align: right; line-height: 1.7;
     }
 
-    #toasts { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    #toasts { position: absolute; top: 86px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .toast {
-      padding: 10px 22px; border-radius: 24px; font-size: 16px; font-weight: 600;
-      background: rgba(20, 60, 30, 0.85); border: 1px solid rgba(130, 230, 150, 0.5); color: #b8f5c4;
+      padding: 10px 22px; border-radius: 6px; font-size: 15px; font-weight: 700;
+      background: linear-gradient(180deg, rgba(36, 70, 44, 0.92), rgba(22, 46, 28, 0.95));
+      border: 1px solid rgba(121, 201, 127, 0.55); color: #b8f0c0;
       animation: toastIn 0.35s ease, toastOut 0.5s ease 3.2s forwards;
     }
     @keyframes toastIn { from { transform: translateY(-14px) scale(0.9); opacity: 0; } }
@@ -108,40 +176,45 @@
 </head>
 <body>
   <div id="startOverlay" class="overlay">
-    <h1>RIDE CLEANER SIMULATOR</h1>
-    <h2>De <b>Steel Comet</b> ligt vol stof, blaadjes en viezigheid — spuit hem weer als nieuw!</h2>
+    <img id="logo" src="./assets/logo.png" alt="Ride Wash Simulator"
+         onerror="this.style.display='none';document.getElementById('logoFallback').style.display='block'" />
+    <div id="logoFallback">RIDE <em>WASH</em> SIMULATOR</div>
+    <div class="tagline" id="levelTagline">Pick a ride. Grab the gun. Blast the grime.</div>
+    <div id="levelMenu"></div>
     <div class="panel">
-      <div><b>Muis</b> rondkijken &nbsp;·&nbsp; <b>Linkermuisknop</b> sprayen</div>
-      <div><b>WASD</b> bewegen &nbsp;·&nbsp; <b>Shift</b> sneller</div>
-      <div><b>Spatie / C</b> omhoog / omlaag (hoogwerker-modus)</div>
-      <div><b>F</b> vuilzoeker aan/uit (baken wijst naar vies plekje)</div>
-      <div><b>Esc</b> pauze</div>
+      <div><b>Mouse</b> look around &nbsp;·&nbsp; <b>LMB</b> spray</div>
+      <div><b>WASD</b> move &nbsp;·&nbsp; <b>Shift</b> sprint &nbsp;·&nbsp; <b>Space / C</b> up / down</div>
+      <div><b>F</b> dirt finder beacon &nbsp;·&nbsp; <b>Esc</b> pause</div>
     </div>
-    <div class="cta">▶ Klik om te beginnen</div>
+    <button id="startBtn" class="btn">▶ &nbsp;START WASHING</button>
   </div>
 
   <div id="pauseOverlay" class="overlay hidden">
-    <h1>PAUZE</h1>
-    <div class="cta">▶ Klik om verder te gaan</div>
+    <div id="logoFallbackPause" style="font-size:40px;font-weight:900;letter-spacing:3px;color:var(--steel-pale)">PAUSED</div>
+    <button id="resumeBtn" class="btn">▶ &nbsp;KEEP WASHING</button>
   </div>
 
   <div id="winOverlay" class="overlay hidden">
-    <h1>✨ SPIC &amp; SPAN! ✨</h1>
-    <h2>De Steel Comet glimt weer als nieuw. De gasten kunnen weer instappen!</h2>
+    <div id="winTitle">✨ SPOTLESS! ✨</div>
+    <div class="tagline" id="winSub">This ride is ready for guests again.</div>
     <div id="winStats"></div>
-    <div class="cta">▶ Klik om opnieuw te spelen</div>
+    <div>
+      <button id="nextBtn" class="btn">NEXT RIDE &nbsp;▶</button>
+      <button id="menuBtn" class="btn secondary">LEVEL MENU</button>
+    </div>
   </div>
 
   <div id="hud">
     <div id="crosshair"></div>
+    <div id="levelName"></div>
     <div id="progressWrap">
-      <div id="progressLabel">SCHOON: 0%</div>
+      <div id="progressLabel">CLEAN: 0%</div>
       <div id="progressBar"><div id="progressFill"></div></div>
     </div>
     <div id="sections"></div>
     <div id="stats"></div>
     <div id="toasts"></div>
-    <div id="hint">F = vuilzoeker · Spatie/C = omhoog/omlaag<br>Kom dichtbij voor meer spuitkracht</div>
+    <div id="hint">F = dirt finder · Space/C = up/down<br>Get close for more cleaning power</div>
   </div>
 
   <script type="module" src="./src/main.js"></script>

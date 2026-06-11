@@ -98,7 +98,7 @@ export class DirtSystem {
         const xm = x * mU;
         const i = (y * w + x) * 4;
         const n = grime(xm * 0.55, ym * 0.55, 3);
-        data[i] = Math.max(80, Math.min(255, 185 + (n - 0.5) * 170)) | 0; // R vuil
+        data[i] = Math.max(45, Math.min(255, 170 + (n - 0.5) * 240)) | 0; // R vuil (vlekkerig)
         data[i + 1] = (vary(xm * 1.3 + 50, ym * 1.3, 2) * 55) | 0;        // G lichte blad-ruis
         data[i + 2] = (vary(xm * 0.4, ym * 0.4 + 90, 2) * 255) | 0;       // B variatie
         data[i + 3] = 255;

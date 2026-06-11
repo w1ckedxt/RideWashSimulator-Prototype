@@ -1,16 +1,17 @@
-// Baanontwerp + frames van de Steel Comet.
-// Een realistische staalcoaster-layout: station → kettinglift (26m) → eerste
-// drop met bocht → turnaround → airtime-heuvel → dalende helix → remstraat.
+// Baan-wiskunde, herbruikbaar voor elke coaster: gesloten centripetal
+// Catmull-Rom door controlepunten + frames met realistische banking.
 // Banking volgt de "gevoelde verticaal" (zwaartekracht + centripetale kracht),
 // precies zoals echte coasters gebankt worden — daardoor zijn alle bochten
 // automatisch zo soepel mogelijk.
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 
-const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
+export const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
 const smooth01 = (t) => t * t * (3 - 2 * t);
 
-function controlPoints() {
+// Layout van de Steel Comet: station → kettinglift (26m) → eerste drop met
+// bocht → turnaround → airtime-heuvel → dalende helix → remstraat.
+export function steelCometPoints() {
   const pts = [
     // Station (heading +X, z = 0)
     v3(-2, 2, 0), v3(8, 2, 0), v3(18, 2, 0),
@@ -64,11 +65,11 @@ function smoothClosedVec3(arr, window, passes) {
   }
 }
 
-export function computeTrackData() {
-  const C = CONFIG.track;
+export function computeTrackData(points = steelCometPoints(), opts = {}) {
+  const C = { ...CONFIG.track, ...opts };
   const g = CONFIG.world.gravity;
 
-  const curve = new THREE.CatmullRomCurve3(controlPoints(), true, 'centripetal');
+  const curve = new THREE.CatmullRomCurve3(points, true, 'centripetal');
   curve.arcLengthDivisions = 3000;
   const length = curve.getLength();
   const N = Math.round(length / C.sampleSpacing);

@@ -1,15 +1,21 @@
-// Ride Cleaner Simulator — bootstrap & game-loop.
+// Ride Wash Simulator — bootstrap & game-loop.
+// Eén level per pagina-load (?level=<id>); het levelregister bepaalt de
+// volgorde en unlock-progressie.
 import * as THREE from 'three';
-import { CONFIG } from './config.js';
-import { computeTrackData } from './layout.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { DirtSystem } from './dirt.js';
-import { buildTrack } from './track.js';
-import { buildEnvironment } from './environment.js';
-import { buildWalkway } from './walkway.js';
 import { PlayerControls } from './player.js';
 import { Washer } from './washer.js';
 import { AudioFX } from './audio.js';
 import { UI } from './ui.js';
+import { LEVELS, markDone, isUnlocked } from './levels/index.js';
+
+// ---------- Level kiezen ----------
+const params = new URLSearchParams(location.search);
+const requestedId = params.get('level') || LEVELS[0].id;
+let levelIndex = Math.max(0, LEVELS.findIndex((l) => l.id === requestedId));
+if (!isUnlocked(levelIndex)) levelIndex = 0;
+const level = LEVELS[levelIndex];
 
 // ---------- Renderer & scene ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -18,12 +24,17 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.08;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 600);
 scene.add(camera);
+
+// Realistische reflecties op metaal/lak (ipv platte kleuren)
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.45;
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -31,23 +42,21 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ---------- Wereld bouwen ----------
+// ---------- Level bouwen ----------
 const dirt = new DirtSystem();
-const trackData = computeTrackData();
 const cleanables = [];
-
-const track = buildTrack(trackData, dirt);
-scene.add(track.group);
-cleanables.push(...track.cleanables);
-
-buildEnvironment(scene, dirt, cleanables, trackData);
-scene.add(buildWalkway(trackData));
+const levelResult = level.build({ scene, dirt, cleanables });
 
 // ---------- Speler, spuit, audio, UI ----------
 const player = new PlayerControls(camera, renderer.domElement);
+const [sx, sy, sz] = levelResult.spawn.pos;
+camera.position.set(sx, sy, sz);
+player.yaw = levelResult.spawn.yaw;
+player.pitch = levelResult.spawn.pitch;
+
 const washer = new Washer(camera, scene, dirt, cleanables);
 const audio = new AudioFX();
-const ui = new UI(dirt);
+const ui = new UI(dirt, level);
 
 dirt.onSectionClean = (label) => {
   ui.toast(label);
@@ -62,7 +71,13 @@ ui.onStart(() => {
   audio.start();
   player.lock();
 });
-ui.onRestart(() => location.reload());
+ui.onNext(() => {
+  const next = LEVELS[levelIndex + 1];
+  if (next) location.search = `?level=${next.id}`;
+});
+ui.onMenu(() => {
+  location.search = '';
+});
 player.onLockChange = (locked) => {
   if (won) return;
   if (locked) {
@@ -142,10 +157,11 @@ function tick() {
       ui.refresh(playSeconds, washer.litersUsed);
       if (dirt.allDone()) {
         won = true;
+        markDone(level.id);
         audio.setSpray(false);
         audio.win();
         document.exitPointerLock();
-        ui.showWin(playSeconds, washer.litersUsed);
+        ui.showWin(playSeconds, washer.litersUsed, levelIndex + 1 < LEVELS.length);
       }
     }
   }
@@ -155,4 +171,4 @@ function tick() {
 tick();
 
 // Debug-hook (alleen voor inspectie in de console; geen gameplay-effect)
-window.__game = { scene, camera, dirt, player, washer, trackData };
+window.__game = { scene, camera, dirt, player, washer, level };
