@@ -272,7 +272,7 @@ export function makePlaza({ x, z, w, d, queues = [] }) {
   return group;
 }
 
-export function makeSign(title, { x, z, rotY = 0 }) {
+export function makeSign(dirt, cleanables, title, { x, z, rotY = 0 }) {
   const c = document.createElement('canvas');
   c.width = 1024; c.height = 320;
   const ctx = c.getContext('2d');
@@ -292,16 +292,25 @@ export function makeSign(title, { x, z, rotY = 0 }) {
   tex.colorSpace = THREE.SRGBColorSpace;
 
   const group = new THREE.Group();
-  const sideMat = new THREE.MeshStandardMaterial({ color: 0x0c1a2e, roughness: 0.6 });
+  // het bord zit zó onder de smurrie dat je de naam pas leest na het spuiten
+  const mask = dirt.createMask({
+    id: 'sign', label: 'Ride sign', w: 256, h: 96,
+    worldU: 7, worldV: 2.4, seed: 919, leafDensity: 2.4,
+    lookup: () => new THREE.Vector3(x, 3.1, z),
+  });
+  const sideMat = createCleanableMaterial(
+    { color: 0x0c1a2e, metalness: 0.2, roughness: 0.6 }, mask.texture);
+  const faceMat = createCleanableMaterial(
+    { color: 0xffffff, map: tex, metalness: 0.05, roughness: 0.55 }, mask.texture);
   const board = new THREE.Mesh(
     new THREE.BoxGeometry(7, 2.2, 0.15),
-    [sideMat, sideMat, sideMat, sideMat,
-      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }),
-      sideMat]
+    [sideMat, sideMat, sideMat, sideMat, faceMat, sideMat]
   );
   board.position.set(x, 3.1, z);
   board.rotation.y = rotY;
   board.castShadow = true;
+  board.userData.maskId = 'sign';
+  cleanables.push(board);
   group.add(board);
   const postMat = new THREE.MeshStandardMaterial({ color: 0x39424d, roughness: 0.5, metalness: 0.5 });
   for (const off of [-2.8, 2.8]) {

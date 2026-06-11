@@ -221,7 +221,7 @@ export const TOPSPIN = {
     }
 
     scene.add(group);
-    scene.add(makeSign('Top Spin', { x: -9, z: 11, rotY: Math.PI / 5 }));
+    scene.add(makeSign(dirt, cleanables, 'Top Spin', { x: -9, z: 11, rotY: Math.PI / 5 }));
     scene.add(makeBooth(dirt, cleanables, { x: 11.5, z: 6.5, rotY: -0.7 }));
 
     // volledige omheining rond de ride met instap-opening + trapje

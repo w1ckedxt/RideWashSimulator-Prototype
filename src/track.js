@@ -58,6 +58,34 @@ export function buildTubeChunks({ samples, N, offsetFn, radius, radialSegs, chun
   return geos;
 }
 
+/** Onzichtbaar loopdek dat de baan volgt: je kunt óp de track staan zonder
+ *  tussen rails en dwarsliggers door te vallen. Niet spuitbaar (geen maskId),
+ *  wel beloopbaar; raycasts van de speler raken hem gewoon. */
+export function buildWalkDeck({ samples, N, halfWidth = 0.85 }) {
+  const positions = new Float32Array((N + 1) * 2 * 3);
+  const index = [];
+  let p = 0;
+  for (let i = 0; i <= N; i++) {
+    const s = samples[i % N];
+    for (const side of [-1, 1]) {
+      const v = s.pos.clone()
+        .addScaledVector(s.right, side * halfWidth)
+        .addScaledVector(s.up, 0.06);
+      positions[p++] = v.x; positions[p++] = v.y; positions[p++] = v.z;
+    }
+  }
+  for (let i = 0; i < N; i++) {
+    const a = i * 2;
+    index.push(a, a + 2, a + 1, a + 2, a + 3, a + 1);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setIndex(index);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }));
+  mesh.userData.walkable = true;
+  return mesh;
+}
+
 export function addChunkMeshes(geos, material, maskId, group, cleanables) {
   for (const geo of geos) {
     const mesh = new THREE.Mesh(geo, material);
@@ -259,6 +287,9 @@ export function buildTrack(trackData, dirt) {
 
     supportPositions.push(new THREE.Vector3(bx, topY * 0.55, bz));
   });
+
+  // loopdek over de hele baan (onzichtbaar, beloopbaar)
+  group.add(buildWalkDeck({ samples, N }));
 
   for (let c = 0; c < supportGeos.length; c += 12) {
     const merged = mergeGeometries(supportGeos.slice(c, c + 12));

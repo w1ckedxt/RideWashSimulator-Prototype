@@ -178,7 +178,7 @@ export const SHIP = {
     cleanables.push(arms);
 
     scene.add(group);
-    scene.add(makeSign('Swinging Ship', { x: -7, z: 10, rotY: Math.PI / 5 }));
+    scene.add(makeSign(dirt, cleanables, 'Swinging Ship', { x: -7, z: 10, rotY: Math.PI / 5 }));
     scene.add(makeBooth(dirt, cleanables, { x: 8.6, z: 8, rotY: -0.6 }));
     scene.add(makeFenceLine(
       [[-7, 6], [-7, -6], [7, -6], [7, 6], [2.5, 6]], 1.0, FENCE_GREEN()));

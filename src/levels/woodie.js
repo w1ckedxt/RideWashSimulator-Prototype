@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { computeTrackData, v3 } from '../layout.js';
-import { buildTubeChunks, addChunkMeshes } from '../track.js';
+import { buildTubeChunks, addChunkMeshes, buildWalkDeck } from '../track.js';
 import { buildWalkway } from '../walkway.js';
 import { buildTrain } from '../train.js';
 import { CellAtlas } from '../atlas.js';
@@ -204,13 +204,16 @@ export const WOODIE = {
     group.add(platform);
     cleanables.push(platform);
 
+    // loopdek over de hele baan (onzichtbaar, beloopbaar)
+    group.add(buildWalkDeck({ samples, N }));
+
     scene.add(group);
     scene.add(buildWalkway(trackData, dirt, cleanables));
     scene.add(buildTrain({
       trackData, dirt, cleanables,
       startMeters: 3, bodyColor: 0x4f3722, noseColor: 0x8a2e2e, seatColor: 0x2e2a26,
     }));
-    scene.add(makeSign('Timber Howl', { x: 22, z: 12, rotY: -Math.PI / 2.6 }));
+    scene.add(makeSign(dirt, cleanables, 'Timber Howl', { x: 22, z: 12, rotY: -Math.PI / 2.6 }));
     scene.add(makeBooth(dirt, cleanables, { x: -5.5, z: 8.5, rotY: 0.5 }));
 
     // stationshekwerk: zijkanten + airgates met instap-gaten, plus trapjes

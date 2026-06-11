@@ -209,7 +209,7 @@ export const CAROUSEL = {
     }
 
     scene.add(group);
-    scene.add(makeSign('Carousel', { x: -6, z: 9, rotY: Math.PI / 5 }));
+    scene.add(makeSign(dirt, cleanables, 'Carousel', { x: -6, z: 9, rotY: Math.PI / 5 }));
     scene.add(makeBooth(dirt, cleanables, { x: 7.2, z: 8.5, rotY: -0.6 }));
 
     const fencePts = [];

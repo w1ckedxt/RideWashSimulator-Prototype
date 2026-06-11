@@ -112,26 +112,35 @@ export class PlayerControls {
       cam.position.y = Math.min(P.bounds.maxY, Math.max(P.eyeHeight, cam.position.y));
       this.onGround = false;
     } else {
-      // geaard poppetje: zwaartekracht + springen + op objecten staan
+      // geaard poppetje: zwaartekracht + springen + stabiel op objecten staan
       if (this.locked && this.keys.has('Space') && this.onGround) {
         this.vy = P.jumpSpeed;
         this.onGround = false;
       }
-      this.vy -= P.gravity * dt;
-      cam.position.y += this.vy * dt;
 
       const feetY = cam.position.y - P.eyeHeight;
-      const groundY = this.#groundBelow(feetY + 0.3);
-      if (feetY <= groundY + 0.02 && this.vy <= 0) {
-        cam.position.y = groundY + P.eyeHeight;
-        this.vy = 0;
-        this.onGround = true;
-      } else if (this.onGround && feetY < groundY + CONFIG.player.stepHeight && this.vy <= 0) {
-        // trapje op: zachtjes omhoog snappen
-        cam.position.y = groundY + P.eyeHeight;
-        this.vy = 0;
-      } else {
-        this.onGround = false;
+      const groundY = this.#groundBelow(feetY + P.stepHeight);
+
+      if (this.onGround && this.vy <= 0) {
+        if (Math.abs(groundY - feetY) <= P.stepHeight) {
+          // grond-plakken: op- én afstapjes vloeiend volgen (geen gesnap)
+          const k2 = 1 - Math.exp(-16 * dt);
+          cam.position.y += (groundY + P.eyeHeight - cam.position.y) * k2;
+          this.vy = 0;
+        } else {
+          this.onGround = false; // echte rand: ga vallen
+        }
+      }
+
+      if (!this.onGround) {
+        this.vy -= P.gravity * dt;
+        cam.position.y += this.vy * dt;
+        const f2 = cam.position.y - P.eyeHeight;
+        if (f2 <= groundY + 0.02 && this.vy <= 0 && groundY - f2 < 1.2) {
+          cam.position.y = groundY + P.eyeHeight;
+          this.vy = 0;
+          this.onGround = true;
+        }
       }
     }
 

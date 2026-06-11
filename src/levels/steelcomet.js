@@ -23,7 +23,7 @@ export const STEELCOMET = {
       startMeters: 3, bodyColor: 0x1d4e89, noseColor: 0xe8b23a,
     }));
     scene.add(makeStation(dirt, cleanables));
-    scene.add(makeSign('Steel Comet', { x: 26, z: 13, rotY: -Math.PI / 2.4 }));
+    scene.add(makeSign(dirt, cleanables, 'Steel Comet', { x: 26, z: 13, rotY: -Math.PI / 2.4 }));
     scene.add(makeBooth(dirt, cleanables, { x: 22, z: 7, rotY: -0.7 }));
 
     const env = buildEnvironment(scene, {
