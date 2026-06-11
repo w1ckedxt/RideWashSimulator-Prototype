@@ -23,12 +23,12 @@ function injectDirt(shader, texture) {
       'vec4 dirtTex = texture2D(uDirtMap, vUv);',
       'float dirtAmt = dirtTex.r;',
       'vec3 dirtCol = mix(uDustColor, uLeafColor, dirtTex.g);',
-      'dirtCol *= 0.5 + 0.32 * dirtTex.b;',
+      'dirtCol *= 0.16 + 0.6 * dirtTex.b;', // varieert van bijna-zwart tot bruin/groen
       'diffuseColor.rgb = mix(diffuseColor.rgb, dirtCol, dirtAmt);',
     ].join('\n'))
     .replace('#include <roughnessmap_fragment>', [
       '#include <roughnessmap_fragment>',
-      'roughnessFactor = mix(roughnessFactor, 0.96, texture2D(uDirtMap, vUv).r);',
+      'roughnessFactor = mix(roughnessFactor, 0.99, texture2D(uDirtMap, vUv).r);',
     ].join('\n'))
     .replace('#include <metalnessmap_fragment>', [
       '#include <metalnessmap_fragment>',

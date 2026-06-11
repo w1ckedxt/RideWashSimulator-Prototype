@@ -312,12 +312,14 @@ export function makeSign(title, { x, z, rotY = 0 }) {
   return group;
 }
 
-/** Operator-booth: het hokje waar de ride vanuit bestuurd wordt. Schoonmaakbaar. */
+/** Operator-booth: een écht inloopbaar hokje — deuropening, doorkijkramen,
+ *  bedieningspaneel met knoppen en een hendel binnen. Schoonmaakbaar. */
 export function makeBooth(dirt, cleanables, { x, z, rotY = 0 }) {
   const group = new THREE.Group();
+  const W = 3.0, D = 3.0, WALL_H = 2.5;
   const mask = dirt.createMask({
     id: 'booth', label: 'Operator booth', w: 256, h: 128,
-    worldU: 9, worldV: 2.6, seed: 911, leafDensity: 1.8,
+    worldU: 12, worldV: 2.6, seed: 911, leafDensity: 1.8,
     lookup: () => new THREE.Vector3(x, 1.3, z),
   });
   const wallMat = createCleanableMaterial(
@@ -325,37 +327,94 @@ export function makeBooth(dirt, cleanables, { x, z, rotY = 0 }) {
   const roofMat = createCleanableMaterial(
     { color: 0x9e3528, metalness: 0.25, roughness: 0.5 }, mask.texture);
 
-  const walls = new THREE.Mesh(new THREE.BoxGeometry(2.3, 2.3, 2.3), wallMat);
-  walls.position.y = 1.15;
+  const wallGeos = [];
+  const addWall = (w, h, d, px, py, pz) => {
+    const g = new THREE.BoxGeometry(w, h, d);
+    g.translate(px, py, pz);
+    wallGeos.push(g);
+  };
+  // borstwering (onder, rondom) — deuropening van 1.1 m in de voorkant (+z)
+  const SILL = 1.05;
+  addWall(W, SILL, 0.1, 0, SILL / 2, -D / 2);                       // achter
+  addWall(0.1, SILL, D, -W / 2, SILL / 2, 0);                       // links
+  addWall(0.1, SILL, D, W / 2, SILL / 2, 0);                        // rechts
+  const sidePanelW = (W - 1.1) / 2;
+  const sidePanelX = 1.1 / 2 + sidePanelW / 2;
+  addWall(sidePanelW, WALL_H, 0.1, -sidePanelX, WALL_H / 2, D / 2); // voor-links
+  addWall(sidePanelW, WALL_H, 0.1, sidePanelX, WALL_H / 2, D / 2);  // voor-rechts
+  // bovenlatei + hoekstijlen + bovenrand rondom
+  addWall(W, 0.45, 0.1, 0, WALL_H - 0.225, -D / 2);
+  addWall(0.1, 0.45, D, -W / 2, WALL_H - 0.225, 0);
+  addWall(0.1, 0.45, D, W / 2, WALL_H - 0.225, 0);
+  for (const [cx, cz] of [[-W / 2, -D / 2], [W / 2, -D / 2], [-W / 2, D / 2], [W / 2, D / 2]]) {
+    addWall(0.14, WALL_H, 0.14, cx, WALL_H / 2, cz);
+  }
+  const walls = new THREE.Mesh(mergeGeometries(wallGeos), wallMat);
   walls.castShadow = walls.receiveShadow = true;
   walls.userData.maskId = 'booth';
   group.add(walls);
   cleanables.push(walls);
 
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.16, 2.8), roofMat);
-  roof.position.y = 2.42;
+  // doorkijkramen (echt transparant) tussen borstwering en latei
+  const glassMat = new THREE.MeshStandardMaterial({
+    color: 0xa8c8da, metalness: 0.3, roughness: 0.08,
+    transparent: true, opacity: 0.28, depthWrite: false,
+  });
+  const glassH = WALL_H - 0.45 - SILL;
+  for (const [w, d, px, pz] of [
+    [W - 0.2, 0.04, 0, -D / 2], [0.04, D - 0.2, -W / 2, 0], [0.04, D - 0.2, W / 2, 0],
+  ]) {
+    const pane = new THREE.Mesh(new THREE.BoxGeometry(w, glassH, d || 0.04), glassMat);
+    pane.geometry.scale(1, 1, 1);
+    pane.position.set(px, SILL + glassH / 2, pz);
+    group.add(pane);
+  }
+
+  // vloer (beloopbaar) + dak
+  const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(W, 0.12, D),
+    new THREE.MeshStandardMaterial({ color: 0x6f6a64, roughness: 0.9 }));
+  floor.position.y = 0.06;
+  floor.receiveShadow = true;
+  floor.userData.walkable = true;
+  group.add(floor);
+
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(W + 0.6, 0.16, D + 0.6), roofMat);
+  roof.position.y = WALL_H + 0.08;
   roof.castShadow = true;
   roof.userData.maskId = 'booth';
   group.add(roof);
   cleanables.push(roof);
 
-  // raamband rondom + bedieningspaneel buiten (decor)
-  const glass = new THREE.Mesh(
-    new THREE.BoxGeometry(2.34, 0.7, 2.34),
-    new THREE.MeshStandardMaterial({ color: 0x2c4458, metalness: 0.9, roughness: 0.15 }));
-  glass.position.set(0, 1.55, 0);
-  group.add(glass);
-  const console_ = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 0.1, 0.35),
-    new THREE.MeshStandardMaterial({ color: 0x232528, roughness: 0.6 }));
-  console_.position.set(1.45, 1.0, 0.4);
-  console_.rotation.x = 0.35;
-  group.add(console_);
-  const consoleLeg = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.05, 0.05, 1.0, 6),
-    new THREE.MeshStandardMaterial({ color: 0x3a4046, roughness: 0.5 }));
-  consoleLeg.position.set(1.45, 0.5, 0.4);
-  group.add(consoleLeg);
+  // bedieningspaneel binnen: lessenaar tegen de achterwand met knoppen + hendel
+  const deskMat = new THREE.MeshStandardMaterial({ color: 0x2b2e33, metalness: 0.4, roughness: 0.5 });
+  const desk = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 0.55), deskMat);
+  desk.position.set(0, 1.02, -D / 2 + 0.45);
+  desk.rotation.x = 0.25;
+  group.add(desk);
+  const deskFront = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.85, 0.1), deskMat);
+  deskFront.position.set(0, 0.5, -D / 2 + 0.62);
+  group.add(deskFront);
+  const buttonColors = [0xc23028, 0x4d8a3a, 0xf0c43c, 0x2f5276, 0xc23028];
+  buttonColors.forEach((c, i) => {
+    const btn = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.045, 0.045, 0.05, 8),
+      new THREE.MeshStandardMaterial({ color: c, roughness: 0.3, emissive: c, emissiveIntensity: 0.25 }));
+    btn.position.set(-0.5 + i * 0.25, 1.1, -D / 2 + 0.42);
+    btn.rotation.x = 0.25;
+    group.add(btn);
+  });
+  const lever = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.025, 0.025, 0.4, 6),
+    new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.8, roughness: 0.3 }));
+  lever.position.set(0.55, 1.25, -D / 2 + 0.45);
+  lever.rotation.x = -0.5;
+  group.add(lever);
+  const knob = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 8, 6),
+    new THREE.MeshStandardMaterial({ color: 0xc23028, roughness: 0.35 }));
+  knob.position.set(0.55, 1.44, -D / 2 + 0.55);
+  group.add(knob);
 
   group.position.set(x, 0, z);
   group.rotation.y = rotY;

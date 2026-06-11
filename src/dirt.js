@@ -98,10 +98,25 @@ export class DirtSystem {
         const xm = x * mU;
         const i = (y * w + x) * 4;
         const n = grime(xm * 0.55, ym * 0.55, 3);
-        data[i] = Math.max(110, Math.min(255, 185 + (n - 0.5) * 200)) | 0; // R vuil (overal duidelijk vies, toch vlekkerig)
-        data[i + 1] = (vary(xm * 1.3 + 50, ym * 1.3, 2) * 55) | 0;        // G lichte blad-ruis
-        data[i + 2] = (vary(xm * 0.4, ym * 0.4 + 90, 2) * 255) | 0;       // B variatie
+        data[i] = Math.max(205, Math.min(255, 240 + (n - 0.5) * 70)) | 0; // R vuil: overal een dikke laag
+        data[i + 1] = (vary(xm * 1.3 + 50, ym * 1.3, 2) * 120) | 0;       // G mos/groen-vlekken
+        data[i + 2] = (vary(xm * 0.4, ym * 0.4 + 90, 2) * 255) | 0;       // B zwart↔bruin variatie
         data[i + 3] = 255;
+      }
+    }
+
+    // Goor-strepen: donkere drips die naar beneden lopen.
+    const streaks = Math.round(mask.worldU * 0.8) + 6;
+    for (let k = 0; k < streaks; k++) {
+      const x = (rand() * w) | 0;
+      const y0 = (rand() * h) | 0;
+      const len = (h * (0.1 + rand() * 0.3)) | 0;
+      for (let y = y0; y < Math.min(h, y0 + len); y++) {
+        for (const xx of [x, (x + 1) % w]) {
+          const i = (y * w + xx) * 4;
+          data[i] = Math.min(255, data[i] + 45);
+          data[i + 2] = (data[i + 2] * 0.55) | 0;
+        }
       }
     }
 
@@ -166,8 +181,9 @@ export class DirtSystem {
           xx = cellX0 + ((((xx - cellX0) % cw) + cw) % cw);
         } else if (xx < cellX0 || xx >= cellX0 + cw) continue;
 
-        const fall = 1 - ((dx * dx) / (ru * ru) + (dy * dy) / (rv * rv));
+        let fall = 1 - ((dx * dx) / (ru * ru) + (dy * dy) / (rv * rv));
         if (fall <= 0) continue;
+        fall = fall * fall * (3 - 2 * fall); // smoothstep → zachte, mooie randen
 
         const i = (row + Math.min(w - 1, Math.floor(xx))) * 4;
         const old = data[i];

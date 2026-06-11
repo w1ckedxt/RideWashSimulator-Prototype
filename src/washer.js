@@ -129,6 +129,7 @@ export class Washer {
     scene.add(this.jet.points, this.mist.points);
 
     this.lastHit = null;
+    this.prevStroke = null;
   }
 
   update(dt, spraying) {
@@ -148,6 +149,8 @@ export class Washer {
       this.litersUsed += S.flowLitersPerSec * dt;
       this.#sprayRays(dt);
       this.#emitJet(dt);
+    } else {
+      this.prevStroke = null;
     }
 
     this.jet.update(dt, 5.5, (i) => this.#jetToMist(i));
@@ -174,6 +177,34 @@ export class Washer {
       this.dirt.erase(hit.object.userData.maskId, hit.uv.x, hit.uv.y, radius, strength);
     }
     this.lastHit = nearest;
+
+    // Vloeiende streek: vul het pad tussen het vorige en huidige raakpunt op,
+    // zodat snelle bewegingen geen stippellijn maar een mooie veeg geven.
+    if (nearest) {
+      const maskId = nearest.object.userData.maskId;
+      const stroke = {
+        maskId, u: nearest.uv.x, v: nearest.uv.y, point: nearest.point.clone(),
+      };
+      const prev = this.prevStroke;
+      if (prev && prev.maskId === maskId) {
+        const dist = nearest.point.distanceTo(prev.point);
+        const radius = S.baseRadius + S.radiusPerMeter * nearest.distance;
+        const du = stroke.u - prev.u;
+        const dv = stroke.v - prev.v;
+        // geen interpolatie over een uv-seam heen
+        if (dist > radius * 0.4 && dist < 4 && Math.abs(du) < 0.45 && Math.abs(dv) < 0.45) {
+          const steps = Math.min(8, Math.ceil(dist / (radius * 0.55)));
+          const strength = S.cleanRate * dt * (1 - S.distanceFalloff * (nearest.distance / S.range));
+          for (let k = 1; k < steps; k++) {
+            const f = k / steps;
+            this.dirt.erase(maskId, prev.u + du * f, prev.v + dv * f, radius, strength);
+          }
+        }
+      }
+      this.prevStroke = stroke;
+    } else {
+      this.prevStroke = null;
+    }
   }
 
   #emitJet(dt) {

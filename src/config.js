@@ -31,8 +31,8 @@ export const CONFIG = {
     tie: 0x474d56,            // grijs (schoon = zichtbaar lichter dan vuil)
     support: 0xcfc9bb,        // vuilwit
     platform: 0x8d8780,       // beton
-    dust: [0.115, 0.095, 0.07],  // basis vuilkleur (donker, smerig bruingrijs)
-    leaf: [0.075, 0.105, 0.035], // blad/mos, donker
+    dust: [0.14, 0.10, 0.065],   // vuil-basistint: bruin (B-kanaal dimt naar zwart)
+    leaf: [0.09, 0.135, 0.045],  // mos/algen-groen
   },
   spray: {
     range: 15,                // effectieve reikwijdte (m)

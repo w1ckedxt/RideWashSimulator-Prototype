@@ -90,6 +90,27 @@
     .level-card.locked { cursor: not-allowed; filter: grayscale(0.8) brightness(0.55); }
     .level-card.locked:hover { transform: none; }
 
+    /* ---------- branding & feedback ---------- */
+    #protoBadge {
+      display: inline-block; margin-top: 14px; padding: 4px 14px; border-radius: 4px;
+      font-size: 12px; font-weight: 800; letter-spacing: 3px; color: #ffe9c4;
+      background: linear-gradient(180deg, var(--rust-bright), var(--rust-dark));
+      border: 1px solid #5d2810; box-shadow: 0 3px 10px rgba(0,0,0,0.45);
+      transform: rotate(-2deg);
+    }
+    #credits { margin-top: 10px; font-size: 14px; color: var(--steel-pale); }
+    #credits a { color: var(--rust-bright); text-decoration: none; font-weight: 700; }
+    #credits a:hover { text-decoration: underline; filter: brightness(1.2); }
+    .feedback {
+      margin-top: 22px; max-width: 560px; padding: 14px 24px; border-radius: 10px;
+      background: linear-gradient(180deg, rgba(193, 86, 31, 0.18), rgba(126, 54, 20, 0.22));
+      border: 1px solid rgba(224, 123, 51, 0.45);
+      font-size: 14px; line-height: 1.8; color: #f0dfd0;
+    }
+    .feedback b { color: var(--rust-bright); }
+    .feedback a { color: #9cc4dd; font-weight: 700; text-decoration: none; }
+    .feedback a:hover { text-decoration: underline; }
+
     #winStats { margin-top: 20px; font-size: 17px; line-height: 2; color: #d8e2ea; }
     #winTitle {
       font-size: 46px; font-weight: 900; letter-spacing: 3px;
@@ -179,6 +200,12 @@
     <img id="logo" src="./assets/logo.png" alt="Ride Wash Simulator"
          onerror="this.style.display='none';document.getElementById('logoFallback').style.display='block'" />
     <div id="logoFallback">RIDE <em>WASH</em> SIMULATOR</div>
+    <div id="protoBadge">PROTOTYPE</div>
+    <div id="credits">
+      by <a href="https://x.com/ThomasGeelens" target="_blank" rel="noopener">Thomas Geelens</a>
+      &nbsp;·&nbsp;
+      <a href="https://lifthill.studio" target="_blank" rel="noopener">Lifthill Studio</a>
+    </div>
     <div class="tagline" id="levelTagline">Pick a ride. Grab the gun. Blast the grime.</div>
     <div id="levelMenu"></div>
     <div class="panel">
@@ -188,6 +215,11 @@
       <div><b>F</b> dirt finder beacon &nbsp;·&nbsp; <b>Esc</b> pause menu</div>
     </div>
     <button id="startBtn" class="btn">▶ &nbsp;START WASHING</button>
+    <div class="feedback">
+      💦 <b>Enjoying this prototype?</b> Then please let us know — that's how this becomes a full game!
+      Shout at us on <a href="https://x.com/ThomasGeelens" target="_blank" rel="noopener">X</a>,
+      Reddit, or mail <a href="mailto:Hello@Lifthill.studio">Hello@Lifthill.studio</a>. Anything helps! 🙌
+    </div>
   </div>
 
   <div id="pauseOverlay" class="overlay hidden">
@@ -221,6 +253,11 @@
     <div>
       <button id="nextBtn" class="btn">NEXT RIDE &nbsp;▶</button>
       <button id="menuBtn" class="btn secondary">LEVEL MENU</button>
+    </div>
+    <div class="feedback">
+      💦 <b>Had fun?</b> Tell us and this prototype becomes a full game —
+      <a href="https://x.com/ThomasGeelens" target="_blank" rel="noopener">X</a>, Reddit,
+      or <a href="mailto:Hello@Lifthill.studio">Hello@Lifthill.studio</a> 🙌
     </div>
   </div>
 

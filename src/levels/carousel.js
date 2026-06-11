@@ -80,7 +80,15 @@ export const CAROUSEL = {
 
   build({ scene, dirt, cleanables }) {
     const group = new THREE.Group();
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.85, roughness: 0.3 });
+    // goud-decor is óók vies; elk stuk lift mee op het masker van zijn sectie
+    const goldOn = (maskTexture) => createCleanableMaterial(
+      { color: 0xc9a227, metalness: 0.85, roughness: 0.3 }, maskTexture);
+    const addGold = (mesh, maskId) => {
+      mesh.userData.maskId = maskId;
+      mesh.castShadow = true;
+      group.add(mesh);
+      cleanables.push(mesh);
+    };
 
     // ---------- platform (houten dek) ----------
     const platMask = dirt.createMask({
@@ -97,10 +105,10 @@ export const CAROUSEL = {
     group.add(platform);
     cleanables.push(platform);
 
-    const trim = new THREE.Mesh(new THREE.TorusGeometry(4.62, 0.05, 8, 32), goldMat);
+    const trim = new THREE.Mesh(new THREE.TorusGeometry(4.62, 0.05, 8, 32), goldOn(platMask.texture));
     trim.rotation.x = Math.PI / 2;
     trim.position.y = 0.74;
-    group.add(trim);
+    addGold(trim, 'cplatform');
 
     // ---------- middenkolom met spiegels en gouden banden ----------
     const colMask = dirt.createMask({
@@ -118,10 +126,10 @@ export const CAROUSEL = {
     cleanables.push(column);
 
     for (const by of [1.1, 3.9]) {
-      const band = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.04, 8, 18), goldMat);
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.04, 8, 18), goldOn(colMask.texture));
       band.rotation.x = Math.PI / 2;
       band.position.y = by;
-      group.add(band);
+      addGold(band, 'ccolumn');
     }
     const mirrorMat = new THREE.MeshStandardMaterial({ color: 0xcfe4ee, metalness: 1.0, roughness: 0.08 });
     for (let k = 0; k < 6; k++) {
@@ -148,13 +156,13 @@ export const CAROUSEL = {
     group.add(canopy);
     cleanables.push(canopy);
 
-    const crown = new THREE.Mesh(new THREE.TorusGeometry(5.42, 0.09, 8, 36), goldMat);
+    const crown = new THREE.Mesh(new THREE.TorusGeometry(5.42, 0.09, 8, 36), goldOn(canopyMask.texture));
     crown.rotation.x = Math.PI / 2;
     crown.position.y = 4.26;
-    group.add(crown);
-    const topBall = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), goldMat);
+    addGold(crown, 'canopy');
+    const topBall = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), goldOn(canopyMask.texture));
     topBall.position.y = 6.25;
-    group.add(topBall);
+    addGold(topBall, 'canopy');
 
     // ---------- paardjes & palen ----------
     const atlas = new CellAtlas(dirt, {
