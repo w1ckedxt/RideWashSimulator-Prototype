@@ -18,8 +18,25 @@ export class UI {
       `RIDE ${LEVELS.indexOf(level) + 1}/${LEVELS.length} — ${level.name.toUpperCase()}`;
     document.getElementById('levelTagline').textContent = level.tagline;
 
+    const doneCount = Object.values(loadProgress()).filter(Boolean).length;
+    document.getElementById('parkProgress').textContent =
+      `PARK CLEAN: ${Math.min(doneCount, LEVELS.length)}/${LEVELS.length}`;
+
+    // mobiel zonder muis? waarschuw vriendelijk (Reddit-clicks)
+    if (matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches) {
+      document.getElementById('mobileNote').style.display = 'block';
+    }
+
     this.#buildLevelMenu();
     this.#buildSections();
+  }
+
+  static bestTimes() {
+    try {
+      return JSON.parse(localStorage.getItem('rws_best')) || {};
+    } catch {
+      return {};
+    }
   }
 
   #buildLevelMenu() {
@@ -33,8 +50,12 @@ export class UI {
       if (done[lvl.id]) card.classList.add('done');
       if (!unlocked) card.classList.add('locked');
       const state = done[lvl.id] ? '✓ CLEAN' : unlocked ? 'DIRTY' : '🔒 LOCKED';
+      const best = UI.bestTimes()[lvl.id];
+      const bestRow = best
+        ? `<div class="best">⏱ best ${Math.floor(best / 60)}:${String(Math.floor(best % 60)).padStart(2, '0')}</div>`
+        : '';
       card.innerHTML =
-        `<div class="num">RIDE ${i + 1}</div><div class="name">${lvl.name}</div><div class="state">${state}</div>`;
+        `<div class="num">RIDE ${i + 1}</div><div class="name">${lvl.name}</div><div class="state">${state}</div>${bestRow}`;
       if (unlocked && lvl.id !== this.level.id) {
         card.addEventListener('click', () => {
           location.search = `?level=${lvl.id}`;
@@ -80,6 +101,14 @@ export class UI {
     document.getElementById('restartBtn').addEventListener('click', cb);
   }
 
+  onShare(cb) {
+    document.getElementById('shareBtn').addEventListener('click', cb);
+  }
+
+  setSprayingHit(hit) {
+    document.getElementById('crosshair').classList.toggle('hit', hit);
+  }
+
   /** Settings-panel in het pauzemenu koppelen. */
   initSettings(settings, { onSound, onSensitivity, onReset }) {
     const sound = document.getElementById('setSound');
@@ -102,7 +131,7 @@ export class UI {
     this.pauseOverlay.classList.remove('hidden');
   }
 
-  showWin(seconds, liters, hasNext) {
+  showWin(seconds, liters, hasNext, isNewBest) {
     this.hud.classList.remove('active');
     const mins = Math.floor(seconds / 60);
     const secs = Math.round(seconds % 60);
@@ -111,7 +140,24 @@ export class UI {
     document.getElementById('winSub').textContent =
       `${this.level.name} is ready for guests again.`;
     document.getElementById('nextBtn').style.display = hasNext ? '' : 'none';
+    document.getElementById('newBest').style.display = isNewBest ? 'block' : 'none';
     this.winOverlay.classList.remove('hidden');
+    this.#confetti();
+  }
+
+  #confetti() {
+    const colors = ['#e07b33', '#6fc3e8', '#f0c43c', '#79c97f', '#c23028', '#e8e4da'];
+    for (let i = 0; i < 50; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti';
+      piece.style.left = `${Math.random() * 100}%`;
+      piece.style.background = colors[i % colors.length];
+      piece.style.animationDuration = `${2.2 + Math.random() * 2.2}s`;
+      piece.style.animationDelay = `${Math.random() * 0.8}s`;
+      piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+      this.winOverlay.appendChild(piece);
+      setTimeout(() => piece.remove(), 6000);
+    }
   }
 
   toast(text) {

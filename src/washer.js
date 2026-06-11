@@ -95,6 +95,26 @@ function buildGunModel() {
   nozzle.position.set(0, 0.01, -0.72);
   gun.add(handle, body, trigger, lance, nozzle);
 
+  // "RWS"-merkplaatje op de zijkant van de body
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 48;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#1d1f24';
+  ctx.fillRect(0, 0, 128, 48);
+  ctx.fillStyle = '#e07b33';
+  ctx.font = 'bold 34px "Avenir Next", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('RWS', 64, 36);
+  const labelTex = new THREE.CanvasTexture(c);
+  labelTex.colorSpace = THREE.SRGBColorSpace;
+  const labelMat = new THREE.MeshStandardMaterial({ map: labelTex, roughness: 0.5 });
+  for (const sideX of [-0.0305, 0.0305]) {
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.06), labelMat);
+    label.position.set(sideX, 0.01, 0.02);
+    label.rotation.y = sideX > 0 ? Math.PI / 2 : -Math.PI / 2;
+    gun.add(label);
+  }
+
   const tip = new THREE.Object3D();
   tip.position.set(0, 0.01, -0.76);
   gun.add(tip);

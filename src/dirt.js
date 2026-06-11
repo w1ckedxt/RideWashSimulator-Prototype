@@ -231,25 +231,30 @@ export class DirtSystem {
     return this.masks.size > 0;
   }
 
-  /** Vind een vieze plek (wereldpositie) voor de vuilzoeker-baken. */
-  findDirtySpot() {
-    let worst = null, worstRatio = 2;
+  /** Vind de vieze plek het dichtst bij de speler (voor de vuilzoeker-baken).
+   *  Zo wijst het baken altijd naar het dichtstbijzijnde restwerk in plaats
+   *  van willekeurig door het park te springen. */
+  findDirtySpot(refPos) {
+    let best = null;
+    let bestDist = Infinity;
     for (const m of this.masks.values()) {
       if (m.done || !m.lookup) continue;
-      const r = m.cleaned / m.total;
-      if (r < worstRatio) { worstRatio = r; worst = m; }
-    }
-    if (!worst) return null;
-    const { w, h, data } = worst;
-    const n = w * h;
-    const start = (Math.random() * n) | 0;
-    for (let k = 0; k < n; k += 89) {
-      const idx = (start + k) % n;
-      if (data[idx * 4] > 90) {
+      const { w, h, data } = m;
+      const n = w * h;
+      const stride = Math.max(37, (n / 160) | 0); // ~160 steekproeven per masker
+      for (let idx = ((Math.random() * stride) | 0); idx < n; idx += stride) {
+        if (data[idx * 4] < 140) continue;
         const x = idx % w, y = (idx / w) | 0;
-        return worst.lookup((x + 0.5) / w, (y + 0.5) / h);
+        const pos = m.lookup((x + 0.5) / w, (y + 0.5) / h);
+        if (!pos) continue;
+        const d = refPos ? pos.distanceToSquared(refPos) : 0;
+        if (d < bestDist) {
+          bestDist = d;
+          best = pos;
+          if (!refPos) return best;
+        }
       }
     }
-    return null;
+    return best;
   }
 }

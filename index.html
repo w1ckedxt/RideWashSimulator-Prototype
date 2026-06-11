@@ -4,18 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ride Wash Simulator</title>
-  <link rel="icon" href="data:," />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>💦</text></svg>" />
+  <meta name="description" content="Ride Wash Simulator — a free PowerWash-style prototype. Pressure-wash filthy theme park rides back to a sparkling shine. By Lifthill Studio." />
   <style>
+    /* Cozy houten kermis-thema — palet uit het Ride Wash-logo:
+       warm hout, sunset-oranje, verweerd teal en room. */
     :root {
-      --steel-dark: #0d161f;
-      --steel: #1c2e3f;
-      --steel-light: #5f8cab;
-      --steel-pale: #9cc4dd;
-      --rust: #c1561f;
-      --rust-bright: #e07b33;
-      --rust-dark: #7e3614;
-      --paper: #e8e4da;
+      --steel-dark: #221712;        /* (alias) donker hout — pagina-achtergrond */
+      --steel: #3a2a1d;             /* (alias) hout-paneel */
+      --steel-light: #a8856a;       /* (alias) licht hout */
+      --steel-pale: #e9d6b8;        /* (alias) room — zachte tekst */
+      --rust: #c46a24;              /* (alias) warm oranje */
+      --rust-bright: #e08a35;       /* (alias) zonnig oranje — accenten */
+      --rust-dark: #8a4516;         /* (alias) gebrand oranje */
+      --paper: #f3e3c2;             /* room */
       --grime: #4a3525;
+      --wood: #5d4226;
+      --wood-deep: #412d18;
+      --teal: #4e7d72;
+      --teal-deep: #35594f;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: var(--steel-dark); }
@@ -27,96 +34,119 @@
       position: fixed; inset: 0; z-index: 20;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       background:
-        radial-gradient(ellipse at 50% 30%, rgba(38, 62, 86, 0.92), rgba(10, 16, 24, 0.97)),
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0 2px, transparent 2px 6px);
+        radial-gradient(ellipse at 50% 28%, rgba(92, 62, 36, 0.55), rgba(26, 17, 11, 0.96)),
+        repeating-linear-gradient(90deg, rgba(255, 220, 170, 0.015) 0 3px, transparent 3px 9px),
+        linear-gradient(180deg, #2a1c12, #1a110b);
       text-align: center; user-select: none;
     }
     .overlay.hidden { display: none; }
 
-    #logo { width: min(380px, 60vw); image-rendering: auto; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.6)); }
+    #logo { width: min(400px, 62vw); filter: drop-shadow(0 12px 34px rgba(0,0,0,0.65)); }
     #logoFallback {
       display: none; font-size: 50px; font-weight: 900; letter-spacing: 3px;
-      background: linear-gradient(180deg, var(--steel-pale), var(--steel-light) 55%, #38576f);
+      background: linear-gradient(180deg, #f4c87a, var(--rust-bright) 55%, #a85a1e);
       -webkit-background-clip: text; background-clip: text; color: transparent;
-      text-shadow: 0 3px 0 rgba(0,0,0,0.35);
     }
-    #logoFallback em { font-style: normal; color: var(--rust-bright); -webkit-text-fill-color: var(--rust-bright); }
+    #logoFallback em { font-style: normal; color: var(--teal); -webkit-text-fill-color: var(--teal); }
 
-    .tagline { margin-top: 8px; font-size: 16px; color: var(--steel-pale); opacity: 0.9; }
+    .tagline { margin-top: 8px; font-size: 16px; color: var(--steel-pale); opacity: 0.92; }
 
     .panel {
-      margin-top: 20px; padding: 16px 26px; border-radius: 10px;
-      background: linear-gradient(180deg, rgba(34, 52, 70, 0.85), rgba(20, 32, 45, 0.9));
-      border: 1px solid rgba(140, 180, 215, 0.22);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 24px rgba(0,0,0,0.45);
-      font-size: 14px; line-height: 1.9; color: #c8d8e6; text-align: left;
+      margin-top: 20px; padding: 16px 26px; border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(93, 66, 38, 0.92), rgba(65, 45, 24, 0.95));
+      border: 2px solid rgba(58, 38, 20, 0.9);
+      box-shadow: inset 0 1px 0 rgba(255, 224, 170, 0.15), inset 0 0 30px rgba(0,0,0,0.25), 0 8px 22px rgba(0,0,0,0.5);
+      font-size: 14px; line-height: 1.9; color: #f0ddc0; text-align: left;
     }
-    .panel b { color: var(--rust-bright); display: inline-block; min-width: 96px; font-weight: 700; }
+    .panel b { color: #f4b864; display: inline-block; min-width: 96px; font-weight: 700; }
 
+    /* houten knoppen: planken met nerf, room-tekst */
     .btn {
-      cursor: pointer; border: none; font-family: inherit;
-      padding: 13px 38px; margin-top: 22px; border-radius: 8px;
-      font-size: 18px; font-weight: 800; letter-spacing: 2px; color: #fff3e8;
-      background: linear-gradient(180deg, var(--rust-bright), var(--rust) 55%, var(--rust-dark));
-      border: 1px solid #5d2810; border-bottom-width: 3px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 6px 18px rgba(0,0,0,0.5);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      cursor: pointer; font-family: inherit;
+      padding: 13px 38px; margin-top: 22px; border-radius: 10px;
+      font-size: 18px; font-weight: 800; letter-spacing: 2px; color: #fff3dd;
+      background:
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.06) 0 2px, transparent 2px 11px),
+        linear-gradient(180deg, #e1933f, #c46a24 55%, #94501a);
+      border: 2px solid #6e3c12; border-bottom-width: 4px;
+      box-shadow: inset 0 2px 0 rgba(255, 235, 190, 0.35), 0 6px 16px rgba(0,0,0,0.5);
+      text-shadow: 0 2px 2px rgba(90, 45, 10, 0.6);
       transition: transform 0.08s ease, filter 0.15s ease;
     }
-    .btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
-    .btn:active { transform: translateY(1px); }
+    .btn:hover { filter: brightness(1.1) saturate(1.05); transform: translateY(-1px); }
+    .btn:active { transform: translateY(2px); border-bottom-width: 2px; }
     .btn.secondary {
-      background: linear-gradient(180deg, #4a708e, #34536e 55%, #233a4f);
-      border-color: #1a2c3d;
+      background:
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.07) 0 2px, transparent 2px 11px),
+        linear-gradient(180deg, #5e9183, #44706a 55%, #2f5048);
+      border-color: #243f38;
     }
 
-    /* ---------- level menu ---------- */
-    #levelMenu { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; justify-content: center; }
+    /* ---------- level menu: houten plankjes ---------- */
+    #levelMenu { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; justify-content: center; }
     .level-card {
-      cursor: pointer; width: 132px; padding: 12px 8px 10px; border-radius: 9px;
-      background: linear-gradient(180deg, rgba(48, 70, 92, 0.9), rgba(26, 40, 55, 0.95));
-      border: 1px solid rgba(140, 180, 215, 0.28); border-bottom-width: 3px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 5px 14px rgba(0,0,0,0.4);
+      cursor: pointer; width: 134px; padding: 12px 8px 10px; border-radius: 10px;
+      background:
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 2px, transparent 2px 10px),
+        linear-gradient(180deg, #7a5631, #5d4226 60%, #4a3119);
+      border: 2px solid #3a2814; border-bottom-width: 4px;
+      box-shadow: inset 0 1px 0 rgba(255, 224, 170, 0.2), 0 5px 14px rgba(0,0,0,0.45);
       transition: transform 0.1s ease, filter 0.15s ease;
     }
     .level-card:hover { filter: brightness(1.15); transform: translateY(-2px); }
-    .level-card .num {
-      font-size: 11px; letter-spacing: 2px; color: var(--steel-pale); opacity: 0.8;
-    }
+    .level-card .num { font-size: 11px; letter-spacing: 2px; color: #d9bb8e; opacity: 0.85; }
     .level-card .name { font-size: 14px; font-weight: 700; margin-top: 3px; color: var(--paper); }
-    .level-card .state { font-size: 11px; margin-top: 5px; color: var(--rust-bright); font-weight: 600; }
-    .level-card.current { border-color: var(--rust-bright); box-shadow: 0 0 14px rgba(224, 123, 51, 0.35), inset 0 1px 0 rgba(255,255,255,0.07); }
-    .level-card.done .state { color: #79c97f; }
-    .level-card.locked { cursor: not-allowed; filter: grayscale(0.8) brightness(0.55); }
+    .level-card .state { font-size: 11px; margin-top: 5px; color: #f4b864; font-weight: 700; }
+    .level-card .best { font-size: 10px; margin-top: 3px; color: #d9bb8e; opacity: 0.85; }
+    .level-card.current { border-color: var(--rust-bright); box-shadow: 0 0 16px rgba(224, 138, 53, 0.4), inset 0 1px 0 rgba(255,224,170,0.2); }
+    .level-card.done .state { color: #8fce8a; }
+    .level-card.locked { cursor: not-allowed; filter: grayscale(0.7) brightness(0.55); }
     .level-card.locked:hover { transform: none; }
 
     /* ---------- branding & feedback ---------- */
     #protoBadge {
-      display: inline-block; margin-top: 14px; padding: 4px 14px; border-radius: 4px;
-      font-size: 12px; font-weight: 800; letter-spacing: 3px; color: #ffe9c4;
-      background: linear-gradient(180deg, var(--rust-bright), var(--rust-dark));
-      border: 1px solid #5d2810; box-shadow: 0 3px 10px rgba(0,0,0,0.45);
+      display: inline-block; margin-top: 14px; padding: 4px 16px; border-radius: 6px;
+      font-size: 12px; font-weight: 800; letter-spacing: 3px; color: #fff0d6;
+      background: linear-gradient(180deg, var(--teal), var(--teal-deep));
+      border: 2px solid #243f38; box-shadow: 0 3px 10px rgba(0,0,0,0.45);
       transform: rotate(-2deg);
     }
     #credits { margin-top: 10px; font-size: 14px; color: var(--steel-pale); }
-    #credits a { color: var(--rust-bright); text-decoration: none; font-weight: 700; }
+    #credits a { color: #f4b864; text-decoration: none; font-weight: 700; }
     #credits a:hover { text-decoration: underline; filter: brightness(1.2); }
-    .feedback {
-      margin-top: 22px; max-width: 560px; padding: 14px 24px; border-radius: 10px;
-      background: linear-gradient(180deg, rgba(193, 86, 31, 0.18), rgba(126, 54, 20, 0.22));
-      border: 1px solid rgba(224, 123, 51, 0.45);
-      font-size: 14px; line-height: 1.8; color: #f0dfd0;
+    #parkProgress { margin-top: 6px; font-size: 13px; letter-spacing: 2px; color: #f4b864; font-weight: 700; }
+    #mobileNote {
+      display: none; margin-top: 14px; padding: 8px 18px; border-radius: 8px;
+      background: rgba(196, 106, 36, 0.3); border: 1px solid rgba(224, 138, 53, 0.55);
+      font-size: 13px; color: #ffe2bd;
     }
-    .feedback b { color: var(--rust-bright); }
-    .feedback a { color: #9cc4dd; font-weight: 700; text-decoration: none; }
+    .feedback {
+      margin-top: 22px; max-width: 560px; padding: 14px 24px; border-radius: 12px;
+      background: linear-gradient(180deg, rgba(78, 125, 114, 0.3), rgba(53, 89, 79, 0.35));
+      border: 2px solid rgba(94, 145, 131, 0.5);
+      font-size: 14px; line-height: 1.8; color: #ead9bd;
+    }
+    .feedback b { color: #9fd8c9; }
+    .feedback a { color: #f4b864; font-weight: 700; text-decoration: none; }
     .feedback a:hover { text-decoration: underline; }
 
-    #winStats { margin-top: 20px; font-size: 17px; line-height: 2; color: #d8e2ea; }
+    #winStats { margin-top: 20px; font-size: 17px; line-height: 2; color: #f0ddc0; }
     #winTitle {
       font-size: 46px; font-weight: 900; letter-spacing: 3px;
       background: linear-gradient(180deg, #ffe9b0, var(--rust-bright) 70%);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
+    #newBest {
+      display: none; margin-top: 8px; font-size: 16px; font-weight: 800; letter-spacing: 2px;
+      color: #ffd866; animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+    .confetti {
+      position: absolute; top: -20px; width: 10px; height: 14px; opacity: 0.95;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall { to { transform: translateY(110vh) rotate(720deg); opacity: 0.7; } }
 
     /* ---------- HUD ---------- */
     #hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: none; }
@@ -125,62 +155,79 @@
     #crosshair {
       position: absolute; left: 50%; top: 50%; width: 6px; height: 6px;
       transform: translate(-50%, -50%); border-radius: 50%;
-      background: rgba(255, 255, 255, 0.92);
-      box-shadow: 0 0 6px rgba(156, 196, 221, 0.95), 0 0 0 7px rgba(156, 196, 221, 0.16);
+      background: rgba(255, 248, 235, 0.95);
+      box-shadow: 0 0 6px rgba(255, 226, 180, 0.95), 0 0 0 7px rgba(255, 226, 180, 0.16);
+      transition: box-shadow 0.12s ease, background 0.12s ease;
     }
+    #crosshair.hit {
+      background: #9fe8ff;
+      box-shadow: 0 0 14px rgba(130, 215, 255, 1), 0 0 0 10px rgba(130, 215, 255, 0.28);
+    }
+    #loading {
+      position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px;
+      background: linear-gradient(180deg, #2a1c12, #1a110b); color: var(--steel-pale);
+      font-size: 15px; letter-spacing: 3px; font-weight: 700;
+    }
+    #loading .spinner {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 4px solid rgba(233, 214, 184, 0.18); border-top-color: var(--rust-bright);
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
+    #levelName {
+      position: absolute; top: 16px; left: 18px; font-size: 13px; font-weight: 700;
+      letter-spacing: 2px; color: #f4b864; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
     #progressWrap { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: 420px; text-align: center; }
     #progressLabel {
       font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--steel-pale);
       margin-bottom: 6px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
     #progressBar {
-      height: 15px; border-radius: 4px; overflow: hidden;
-      background: rgba(10, 18, 26, 0.7); border: 1px solid rgba(140, 180, 215, 0.4);
+      height: 16px; border-radius: 8px; overflow: hidden;
+      background: linear-gradient(180deg, rgba(43, 28, 14, 0.85), rgba(60, 40, 20, 0.8));
+      border: 2px solid rgba(58, 38, 20, 0.95);
       box-shadow: inset 0 2px 5px rgba(0,0,0,0.6);
     }
     #progressFill {
       height: 100%; width: 0%;
-      background: linear-gradient(180deg, #6fc3e8, #2f87b5 60%, #1f5f84);
-      box-shadow: 0 0 12px rgba(80, 170, 220, 0.5); transition: width 0.25s ease;
-    }
-
-    #levelName {
-      position: absolute; top: 16px; left: 18px; font-size: 13px; font-weight: 700;
-      letter-spacing: 2px; color: var(--rust-bright); text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      background: linear-gradient(180deg, #7fd4c4, #4e9d8d 60%, #35705f);
+      box-shadow: 0 0 12px rgba(110, 200, 180, 0.5); transition: width 0.25s ease;
     }
 
     #sections {
       position: absolute; top: 16px; right: 16px; width: 215px;
-      background: linear-gradient(180deg, rgba(28, 44, 60, 0.78), rgba(16, 26, 38, 0.82));
-      border: 1px solid rgba(140, 180, 215, 0.22); border-radius: 8px; padding: 11px 13px; font-size: 12.5px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+      background: linear-gradient(180deg, rgba(73, 51, 28, 0.85), rgba(50, 34, 18, 0.88));
+      border: 2px solid rgba(58, 38, 20, 0.9); border-radius: 10px; padding: 11px 13px; font-size: 12.5px;
+      box-shadow: inset 0 1px 0 rgba(255, 224, 170, 0.12);
     }
     #sections .row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
-    #sections .name { flex: 0 0 96px; color: #c2d4e2; }
-    #sections .bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden; }
-    #sections .bar i { display: block; height: 100%; width: 0%; background: #56a8d8; border-radius: 3px; transition: width 0.3s; }
-    #sections .row.done .name { color: #79c97f; }
-    #sections .row.done .bar i { background: #79c97f; }
+    #sections .name { flex: 0 0 96px; color: #ead9bd; }
+    #sections .bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.3); overflow: hidden; }
+    #sections .bar i { display: block; height: 100%; width: 0%; background: #6ec3b1; border-radius: 3px; transition: width 0.3s; }
+    #sections .row.done .name { color: #8fce8a; }
+    #sections .row.done .bar i { background: #8fce8a; }
 
     #stats {
       position: absolute; bottom: 15px; left: 18px;
-      background: linear-gradient(180deg, rgba(28, 44, 60, 0.78), rgba(16, 26, 38, 0.82));
-      border: 1px solid rgba(140, 180, 215, 0.22);
-      border-radius: 8px; padding: 9px 15px; font-size: 13px; color: #c2d4e2; line-height: 1.8;
+      background: linear-gradient(180deg, rgba(73, 51, 28, 0.85), rgba(50, 34, 18, 0.88));
+      border: 2px solid rgba(58, 38, 20, 0.9);
+      border-radius: 10px; padding: 9px 15px; font-size: 13px; color: #ead9bd; line-height: 1.8;
     }
-    #stats b { color: var(--rust-bright); }
+    #stats b { color: #f4b864; }
 
     #hint {
-      position: absolute; bottom: 15px; right: 18px; font-size: 12px; color: rgba(170, 198, 220, 0.6);
+      position: absolute; bottom: 15px; right: 18px; font-size: 12px; color: rgba(233, 214, 184, 0.6);
       text-shadow: 0 1px 3px rgba(0,0,0,0.8); text-align: right; line-height: 1.7;
     }
 
     #toasts { position: absolute; top: 86px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .toast {
-      padding: 10px 22px; border-radius: 6px; font-size: 15px; font-weight: 700;
-      background: linear-gradient(180deg, rgba(36, 70, 44, 0.92), rgba(22, 46, 28, 0.95));
-      border: 1px solid rgba(121, 201, 127, 0.55); color: #b8f0c0;
+      padding: 10px 22px; border-radius: 10px; font-size: 15px; font-weight: 700;
+      background: linear-gradient(180deg, rgba(78, 125, 114, 0.92), rgba(53, 89, 79, 0.95));
+      border: 2px solid rgba(143, 206, 138, 0.5); color: #d8f5d2;
       animation: toastIn 0.35s ease, toastOut 0.5s ease 3.2s forwards;
     }
     @keyframes toastIn { from { transform: translateY(-14px) scale(0.9); opacity: 0; } }
@@ -196,6 +243,7 @@
   </script>
 </head>
 <body>
+  <div id="loading"><div class="spinner"></div>FIRING UP THE PRESSURE WASHER…</div>
   <div id="startOverlay" class="overlay">
     <img id="logo" src="./assets/logo.png" alt="Ride Wash Simulator"
          onerror="this.style.display='none';document.getElementById('logoFallback').style.display='block'" />
@@ -207,6 +255,8 @@
       <a href="https://lifthill.studio" target="_blank" rel="noopener">Lifthill Studio</a>
     </div>
     <div class="tagline" id="levelTagline">Pick a ride. Grab the gun. Blast the grime.</div>
+    <div id="parkProgress"></div>
+    <div id="mobileNote">⚠️ Best played on desktop with mouse &amp; keyboard</div>
     <div id="levelMenu"></div>
     <div class="panel">
       <div><b>Mouse</b> look around &nbsp;·&nbsp; <b>LMB</b> spray</div>
@@ -250,8 +300,10 @@
     <div id="winTitle">✨ SPOTLESS! ✨</div>
     <div class="tagline" id="winSub">This ride is ready for guests again.</div>
     <div id="winStats"></div>
+    <div id="newBest">🏆 NEW BEST TIME!</div>
     <div>
       <button id="nextBtn" class="btn">NEXT RIDE &nbsp;▶</button>
+      <button id="shareBtn" class="btn secondary">SHARE ON 𝕏</button>
       <button id="menuBtn" class="btn secondary">LEVEL MENU</button>
     </div>
     <div class="feedback">

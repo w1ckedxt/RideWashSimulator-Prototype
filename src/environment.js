@@ -504,8 +504,8 @@ export function makeStation(dirt, cleanables) {
  */
 // Kleurpaletten voor de dag/nacht-cyclus.
 const DAY = {
-  sun: 0xffeacc, sunI: 2.25, top: 0x4584bd, bot: 0xccdbe8,
-  fog: 0xbcd0e0, hemiI: 0.6, glow: 0xfff0d0, glowS: 0.25,
+  sun: 0xffe2ae, sunI: 2.25, top: 0x4a86b8, bot: 0xd9dcc6,
+  fog: 0xc8cfbd, hemiI: 0.62, glow: 0xffe6b8, glowS: 0.3,
 };
 const SUNSET = {
   sun: 0xff9148, sunI: 1.5, top: 0x35507c, bot: 0xf0a45c,

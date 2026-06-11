@@ -106,6 +106,19 @@ ui.onMenu(() => {
   location.search = '';
 });
 ui.onRestart(() => location.reload());
+
+// Share-knop op het winscherm (URL bijwerken naar de itch.io-pagina na release)
+const SHARE_URL = 'https://lifthill.studio';
+ui.onShare(() => {
+  const mins = Math.floor(playSeconds / 60);
+  const secs = Math.round(playSeconds % 60);
+  const text = `I pressure-washed the ${level.name} spotless in ${mins}m ${secs}s in Ride Wash Simulator 💦🎢 ` +
+    `A free PowerWash-style prototype by @ThomasGeelens — try to beat my time!`;
+  window.open(
+    `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(SHARE_URL)}`,
+    '_blank'
+  );
+});
 player.onLockChange = (locked) => {
   if (won) return;
   if (locked) {
@@ -118,9 +131,9 @@ player.onLockChange = (locked) => {
 
 // ---------- Vuilzoeker-baken (F) ----------
 const beacon = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.55, 0.55, 70, 12, 1, true),
+  new THREE.CylinderGeometry(0.8, 0.8, 70, 12, 1, true),
   new THREE.MeshBasicMaterial({
-    color: 0x47ff88, transparent: true, opacity: 0.3,
+    color: 0x3dff7f, transparent: true, opacity: 0.45,
     blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
   })
 );
@@ -144,8 +157,8 @@ function updateBeacon(dt) {
   }
   beaconTimer -= dt;
   if (beaconTimer <= 0) {
-    beaconTimer = 4;
-    const spot = dirt.findDirtySpot();
+    beaconTimer = 3;
+    const spot = dirt.findDirtySpot(camera.position);
     if (spot) {
       beacon.position.set(spot.x, 35, spot.z);
       beacon.visible = true;
@@ -153,13 +166,15 @@ function updateBeacon(dt) {
       beacon.visible = false;
     }
   }
-  beacon.material.opacity = 0.2 + 0.14 * Math.sin(performance.now() * 0.004);
+  beacon.material.opacity = 0.35 + 0.18 * Math.sin(performance.now() * 0.004);
 }
 
 // ---------- Game-loop ----------
 const clock = new THREE.Clock();
 let uiTimer = 0;
 let wasSpraying = false;
+let wasHitting = false;
+let loadingHidden = false;
 
 function tick() {
   requestAnimationFrame(tick);
@@ -174,6 +189,11 @@ function tick() {
     audio.setSpray(spraying);
     wasSpraying = spraying;
   }
+  const hitting = spraying && !!washer.lastHit;
+  if (hitting !== wasHitting) {
+    ui.setSprayingHit(hitting);
+    wasHitting = hitting;
+  }
 
   if (started && !won) {
     playSeconds += dt;
@@ -187,15 +207,31 @@ function tick() {
       if (dirt.allDone()) {
         won = true;
         markDone(level.id);
+        // best time bijhouden
+        let isNewBest = false;
+        try {
+          const best = JSON.parse(localStorage.getItem('rws_best')) || {};
+          if (!best[level.id] || playSeconds < best[level.id]) {
+            best[level.id] = Math.round(playSeconds);
+            localStorage.setItem('rws_best', JSON.stringify(best));
+            isNewBest = true;
+          }
+        } catch { /* localStorage uit */ }
         audio.setSpray(false);
         audio.win();
         document.exitPointerLock();
-        ui.showWin(playSeconds, washer.litersUsed, levelIndex + 1 < LEVELS.length);
+        ui.showWin(playSeconds, washer.litersUsed, levelIndex + 1 < LEVELS.length, isNewBest);
       }
     }
   }
 
   renderer.render(scene, camera);
+
+  if (!loadingHidden) {
+    loadingHidden = true;
+    const el = document.getElementById('loading');
+    if (el) el.remove();
+  }
 }
 tick();
 
