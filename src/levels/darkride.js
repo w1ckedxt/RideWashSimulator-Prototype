@@ -317,15 +317,15 @@ export const DARKRIDE = {
         }));
       lens.position.set(L.x, 2.62, L.z);
       group.add(lens);
-      const lensGlow = new THREE.PointLight(L.color, 6, 5, 2);
-      lensGlow.position.set(L.x, 2.6, L.z);
-      scene.add(lensGlow);
 
       const spot = new THREE.SpotLight(L.color, 140, 20, 0.6, 0.5, 1.6);
       spot.position.set(L.x, 2.7, L.z);
       spot.target.position.set(L.tx, 0.8, L.tz);
-      spot.castShadow = true;
-      spot.shadow.mapSize.set(512, 512);
+      // schaduw alleen op de twee belangrijkste spots (performance)
+      if (L.name === 'gnomes' || L.name === 'cottage') {
+        spot.castShadow = true;
+        spot.shadow.mapSize.set(512, 512);
+      }
       scene.add(spot, spot.target);
     }
 
