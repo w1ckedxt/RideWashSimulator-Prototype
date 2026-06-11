@@ -162,7 +162,7 @@ export class Washer {
     for (let r = 0; r < S.raysPerFrame; r++) {
       const jitterX = (Math.random() - 0.5) * 2 * spread;
       const jitterY = (Math.random() - 0.5) * 2 * spread;
-      this.raycaster.setFromCamera({ x: jitterX * 8, y: jitterY * 8 }, this.camera);
+      this.raycaster.setFromCamera({ x: jitterX * 3, y: jitterY * 3 }, this.camera);
       const hits = this.raycaster.intersectObjects(this.cleanables, false);
       if (!hits.length) continue;
       const hit = hits[0];

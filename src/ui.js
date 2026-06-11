@@ -67,6 +67,22 @@ export class UI {
 
   onMenu(cb) {
     document.getElementById('menuBtn').addEventListener('click', cb);
+    document.getElementById('pauseMenuBtn').addEventListener('click', cb);
+  }
+
+  onRestart(cb) {
+    document.getElementById('restartBtn').addEventListener('click', cb);
+  }
+
+  /** Settings-panel in het pauzemenu koppelen. */
+  initSettings(settings, { onSound, onSensitivity, onReset }) {
+    const sound = document.getElementById('setSound');
+    const sens = document.getElementById('setSens');
+    sound.checked = settings.sound;
+    sens.value = settings.sensitivity;
+    sound.addEventListener('change', () => onSound(sound.checked));
+    sens.addEventListener('input', () => onSensitivity(parseFloat(sens.value)));
+    document.getElementById('setReset').addEventListener('click', onReset);
   }
 
   showPlaying() {
@@ -95,7 +111,7 @@ export class UI {
   toast(text) {
     const el = document.createElement('div');
     el.className = 'toast';
-    el.textContent = `✨ ${text} clean!`;
+    el.textContent = text;
     this.toasts.appendChild(el);
     setTimeout(() => el.remove(), 3900);
   }

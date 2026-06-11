@@ -168,8 +168,8 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      "three": "./vendor/three.module.js",
+      "three/addons/": "./vendor/addons/"
     }
   }
   </script>
@@ -183,15 +183,35 @@
     <div id="levelMenu"></div>
     <div class="panel">
       <div><b>Mouse</b> look around &nbsp;·&nbsp; <b>LMB</b> spray</div>
-      <div><b>WASD</b> move &nbsp;·&nbsp; <b>Shift</b> sprint &nbsp;·&nbsp; <b>Space / C</b> up / down</div>
-      <div><b>F</b> dirt finder beacon &nbsp;·&nbsp; <b>Esc</b> pause</div>
+      <div><b>WASD</b> move &nbsp;·&nbsp; <b>Shift</b> sprint &nbsp;·&nbsp; <b>Space</b> jump</div>
+      <div><b>V</b> cherry picker (then <b>Space/C</b> = up/down)</div>
+      <div><b>F</b> dirt finder beacon &nbsp;·&nbsp; <b>Esc</b> pause menu</div>
     </div>
     <button id="startBtn" class="btn">▶ &nbsp;START WASHING</button>
   </div>
 
   <div id="pauseOverlay" class="overlay hidden">
-    <div id="logoFallbackPause" style="font-size:40px;font-weight:900;letter-spacing:3px;color:var(--steel-pale)">PAUSED</div>
-    <button id="resumeBtn" class="btn">▶ &nbsp;KEEP WASHING</button>
+    <div style="font-size:40px;font-weight:900;letter-spacing:3px;color:var(--steel-pale)">PAUSED</div>
+    <div>
+      <button id="resumeBtn" class="btn">▶ &nbsp;KEEP WASHING</button>
+      <button id="restartBtn" class="btn secondary">RESTART RIDE</button>
+      <button id="pauseMenuBtn" class="btn secondary">ALL RIDES</button>
+    </div>
+    <div class="panel" style="margin-top:28px; min-width:340px;">
+      <div style="font-size:12px;letter-spacing:2px;color:var(--rust-bright);font-weight:700;margin-bottom:8px;">SETTINGS</div>
+      <label style="display:flex;justify-content:space-between;align-items:center;gap:20px;">
+        Sound
+        <input id="setSound" type="checkbox" checked style="accent-color:var(--rust-bright);width:18px;height:18px;" />
+      </label>
+      <label style="display:flex;justify-content:space-between;align-items:center;gap:20px;">
+        Mouse sensitivity
+        <input id="setSens" type="range" min="0.4" max="2" step="0.1" value="1" style="accent-color:var(--rust-bright);width:140px;" />
+      </label>
+      <label style="display:flex;justify-content:space-between;align-items:center;gap:20px;">
+        Reset progress
+        <button id="setReset" class="btn secondary" style="margin:0;padding:5px 14px;font-size:12px;">RESET</button>
+      </label>
+    </div>
   </div>
 
   <div id="winOverlay" class="overlay hidden">
@@ -214,7 +234,7 @@
     <div id="sections"></div>
     <div id="stats"></div>
     <div id="toasts"></div>
-    <div id="hint">F = dirt finder · Space/C = up/down<br>Get close for more cleaning power</div>
+    <div id="hint">F = dirt finder · V = cherry picker<br>Get close for more cleaning power</div>
   </div>
 
   <script type="module" src="./src/main.js"></script>

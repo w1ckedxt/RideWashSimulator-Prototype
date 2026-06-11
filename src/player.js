@@ -1,28 +1,47 @@
-// First-person besturing: pointer lock + WASD, met hoogwerker-modus
-// (Spatie/C voor omhoog/omlaag) zodat je overal bij de baan kunt.
+// First-person besturing, PowerWash-stijl: een geaard poppetje met
+// zwaartekracht, lopen, springen en op objecten kunnen staan (raycast naar
+// beneden). Voor hoge plekken is er een hoogwerker-modus (V): vrij
+// omhoog/omlaag zoals een cherry picker.
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
+
+const DOWN = new THREE.Vector3(0, -1, 0);
 
 export class PlayerControls {
   constructor(camera, domElement) {
     this.camera = camera;
     this.dom = domElement;
-    this.yaw = -0.35;            // kijkt richting station + lifthill
+    this.yaw = -0.35;
     this.pitch = 0.02;
-    this.velocity = new THREE.Vector3();
+    this.velocity = new THREE.Vector3();   // horizontaal (gesmoothed)
+    this.vy = 0;                           // verticaal (zwaartekracht)
+    this.onGround = false;
+    this.mode = 'walk';                    // 'walk' | 'lift'
+    this.walkSurfaces = [];                // meshes waar je op kunt staan
     this.keys = new Set();
     this.locked = false;
     this.spraying = false;
+    this.downRay = new THREE.Raycaster();
+    this.downRay.far = 80;
+    this.onModeChange = null;
+    this.sensitivity = 1;
 
     camera.rotation.order = 'YXZ';
     camera.position.set(16, CONFIG.player.eyeHeight, 14);
 
-    document.addEventListener('keydown', (e) => this.keys.add(e.code));
+    document.addEventListener('keydown', (e) => {
+      this.keys.add(e.code);
+      if (e.code === 'KeyV' && this.locked) {
+        this.mode = this.mode === 'walk' ? 'lift' : 'walk';
+        this.vy = 0;
+        if (this.onModeChange) this.onModeChange(this.mode);
+      }
+    });
     document.addEventListener('keyup', (e) => this.keys.delete(e.code));
     document.addEventListener('mousemove', (e) => {
       if (!this.locked) return;
-      this.yaw -= e.movementX * 0.0023;
-      this.pitch -= e.movementY * 0.0023;
+      this.yaw -= e.movementX * 0.0023 * this.sensitivity;
+      this.pitch -= e.movementY * 0.0023 * this.sensitivity;
       this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch));
     });
     document.addEventListener('mousedown', (e) => {
@@ -40,6 +59,20 @@ export class PlayerControls {
 
   lock() {
     this.dom.requestPointerLock();
+  }
+
+  setWalkSurfaces(meshes) {
+    this.walkSurfaces = meshes;
+  }
+
+  /** Hoogste opstapbare oppervlak onder de camera (max. stap boven de voeten). */
+  #groundBelow(feetY) {
+    this.downRay.set(this.camera.position, DOWN);
+    const hits = this.downRay.intersectObjects(this.walkSurfaces, false);
+    for (const h of hits) {
+      if (h.point.y <= feetY + CONFIG.player.stepHeight) return h.point.y;
+    }
+    return 0; // grasveld
   }
 
   update(dt) {
@@ -60,18 +93,50 @@ export class PlayerControls {
       let speed = P.walkSpeed;
       if (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')) speed *= P.fastMultiplier;
       wish.multiplyScalar(speed);
-
-      if (this.keys.has('Space')) wish.y += P.verticalSpeed;
-      if (this.keys.has('KeyC')) wish.y -= P.verticalSpeed;
     }
 
     const k = 1 - Math.exp(-P.accel * dt);
     this.velocity.lerp(wish, k);
-    cam.position.addScaledVector(this.velocity, dt);
+    cam.position.x += this.velocity.x * dt;
+    cam.position.z += this.velocity.z * dt;
+
+    if (this.mode === 'lift') {
+      // hoogwerker: vrij zweven, geen zwaartekracht
+      let vyWish = 0;
+      if (this.locked) {
+        if (this.keys.has('Space')) vyWish += P.verticalSpeed;
+        if (this.keys.has('KeyC')) vyWish -= P.verticalSpeed;
+      }
+      this.vy += (vyWish - this.vy) * k;
+      cam.position.y += this.vy * dt;
+      cam.position.y = Math.min(P.bounds.maxY, Math.max(P.eyeHeight, cam.position.y));
+      this.onGround = false;
+    } else {
+      // geaard poppetje: zwaartekracht + springen + op objecten staan
+      if (this.locked && this.keys.has('Space') && this.onGround) {
+        this.vy = P.jumpSpeed;
+        this.onGround = false;
+      }
+      this.vy -= P.gravity * dt;
+      cam.position.y += this.vy * dt;
+
+      const feetY = cam.position.y - P.eyeHeight;
+      const groundY = this.#groundBelow(feetY + 0.3);
+      if (feetY <= groundY + 0.02 && this.vy <= 0) {
+        cam.position.y = groundY + P.eyeHeight;
+        this.vy = 0;
+        this.onGround = true;
+      } else if (this.onGround && feetY < groundY + CONFIG.player.stepHeight && this.vy <= 0) {
+        // trapje op: zachtjes omhoog snappen
+        cam.position.y = groundY + P.eyeHeight;
+        this.vy = 0;
+      } else {
+        this.onGround = false;
+      }
+    }
 
     const b = P.bounds;
     cam.position.x = Math.max(b.minX, Math.min(b.maxX, cam.position.x));
     cam.position.z = Math.max(b.minZ, Math.min(b.maxZ, cam.position.z));
-    cam.position.y = Math.max(b.minY, Math.min(b.maxY, cam.position.y));
   }
 }

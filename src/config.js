@@ -38,19 +38,22 @@ export const CONFIG = {
     range: 15,                // effectieve reikwijdte (m)
     raysPerFrame: 5,
     coneSpreadDeg: 0.9,
-    baseRadius: 0.16,         // schoonmaakradius dichtbij (m)
-    radiusPerMeter: 0.035,    // radius groeit met afstand
-    cleanRate: 2.6,           // sterkte per ray per seconde (1.0 = vol pixel/sec)
-    distanceFalloff: 0.55,    // krachtverlies op max afstand
+    baseRadius: 0.22,         // schoonmaakradius dichtbij (m)
+    radiusPerMeter: 0.045,    // radius groeit met afstand
+    cleanRate: 9,             // sterkte per ray per seconde (1.0 = vol pixel/sec)
+    distanceFalloff: 0.5,     // krachtverlies op max afstand
     flowLitersPerSec: 0.15,   // ~9 L/min, realistische hogedrukspuit
   },
   player: {
-    eyeHeight: 1.8,
-    walkSpeed: 6.5,
-    fastMultiplier: 2.1,
-    verticalSpeed: 5.5,
+    eyeHeight: 1.7,
+    walkSpeed: 5.4,
+    fastMultiplier: 1.9,
+    verticalSpeed: 5.5,       // hoogwerker-modus
     accel: 10,                // smoothing
-    bounds: { minX: -75, maxX: 145, minZ: -90, maxZ: 40, minY: 1.7, maxY: 40 },
+    gravity: 14,
+    jumpSpeed: 5.2,
+    stepHeight: 0.55,         // opstapje (perronrand, walkway)
+    bounds: { minX: -75, maxX: 145, minZ: -90, maxZ: 40, maxY: 40 },
   },
   dirt: {
     cleanSnapBelow: 14,       // pixelwaarde < dit → knapt naar 0

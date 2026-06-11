@@ -197,6 +197,7 @@ export function makePlaza({ x, z, w, d, queues = [] }) {
   plaza.rotation.x = -Math.PI / 2;
   plaza.position.set(x, 0.02, z);
   plaza.receiveShadow = true;
+  plaza.userData.walkable = true;
   group.add(plaza);
   const fenceMat = FENCE_GREEN();
   for (const line of queues) group.add(makeFenceLine(line, 1.0, fenceMat));
@@ -332,6 +333,7 @@ export function buildEnvironment(scene, o) {
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
+  ground.userData.walkable = true;
   scene.add(ground);
 
   scene.add(makeForest({ clearFn: o.clearFn, count: o.treeCount, area: o.treeArea }));

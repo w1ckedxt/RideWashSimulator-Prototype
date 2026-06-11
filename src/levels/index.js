@@ -23,6 +23,8 @@ export function markDone(id) {
   localStorage.setItem(DONE_KEY, JSON.stringify(done));
 }
 
-export function isUnlocked(index, done = loadProgress()) {
-  return index === 0 || !!done[LEVELS[index - 1].id];
+// Prototype / full game mode: alles direct speelbaar, geen unlock-gate.
+// (✓-states worden wel bijgehouden voor het menu.)
+export function isUnlocked() {
+  return true;
 }

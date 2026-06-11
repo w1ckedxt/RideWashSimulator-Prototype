@@ -4,6 +4,15 @@ export class AudioFX {
   constructor() {
     this.ctx = null;
     this.sprayGain = null;
+    this.master = null;
+    this.muted = false;
+  }
+
+  setMuted(muted) {
+    this.muted = muted;
+    if (this.master) {
+      this.master.gain.setTargetAtTime(muted ? 0 : 1, this.ctx.currentTime, 0.02);
+    }
   }
 
   /** Moet vanuit een user-gesture worden aangeroepen. */
@@ -14,6 +23,9 @@ export class AudioFX {
     }
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     this.ctx = ctx;
+    this.master = ctx.createGain();
+    this.master.gain.value = this.muted ? 0 : 1;
+    this.master.connect(ctx.destination);
 
     const noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const ch = noiseBuf.getChannelData(0);
@@ -29,7 +41,7 @@ export class AudioFX {
     band.Q.value = 0.65;
     this.sprayGain = ctx.createGain();
     this.sprayGain.gain.value = 0;
-    sprayNoise.connect(band).connect(this.sprayGain).connect(ctx.destination);
+    sprayNoise.connect(band).connect(this.sprayGain).connect(this.master);
     sprayNoise.start();
 
     // Zachte wind-ambience
@@ -41,7 +53,7 @@ export class AudioFX {
     low.frequency.value = 320;
     const windGain = ctx.createGain();
     windGain.gain.value = 0.035;
-    wind.connect(low).connect(windGain).connect(ctx.destination);
+    wind.connect(low).connect(windGain).connect(this.master);
     wind.start();
   }
 
@@ -60,7 +72,7 @@ export class AudioFX {
     g.gain.setValueAtTime(0, t0);
     g.gain.linearRampToValueAtTime(vol, t0 + 0.02);
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-    o.connect(g).connect(this.ctx.destination);
+    o.connect(g).connect(this.master);
     o.start(t0);
     o.stop(t0 + dur + 0.05);
   }

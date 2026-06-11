@@ -54,13 +54,39 @@ camera.position.set(sx, sy, sz);
 player.yaw = levelResult.spawn.yaw;
 player.pitch = levelResult.spawn.pitch;
 
+// Oppervlakken waar het poppetje op kan staan (grond, plaza, perrons,
+// walkway, rails — alles wat schoonmaakbaar is, is ook beklimbaar).
+const walkSurfaces = [];
+scene.traverse((m) => {
+  if (m.isMesh && (m.userData.walkable || m.userData.maskId)) walkSurfaces.push(m);
+});
+player.setWalkSurfaces(walkSurfaces);
+
 const washer = new Washer(camera, scene, dirt, cleanables);
 const audio = new AudioFX();
 const ui = new UI(dirt, level);
 
+// ---------- Settings (persistent) ----------
+const SETTINGS_KEY = 'rws_settings';
+let settings = { sound: true, sensitivity: 1 };
+try {
+  settings = { ...settings, ...(JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}) };
+} catch { /* default */ }
+const saveSettings = () => localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+audio.setMuted(!settings.sound);
+player.sensitivity = settings.sensitivity;
+ui.initSettings(settings, {
+  onSound: (on) => { settings.sound = on; audio.setMuted(!on); saveSettings(); },
+  onSensitivity: (v) => { settings.sensitivity = v; player.sensitivity = v; saveSettings(); },
+  onReset: () => { localStorage.removeItem('rws_done'); location.search = ''; },
+});
+
 dirt.onSectionClean = (label) => {
-  ui.toast(label);
+  ui.toast(`✨ ${label} clean!`);
   audio.sectionDing();
+};
+player.onModeChange = (mode) => {
+  ui.toast(mode === 'lift' ? '🛗 Cherry picker ON — Space/C for up/down' : '🚶 Back on foot');
 };
 
 let started = false;
@@ -78,6 +104,7 @@ ui.onNext(() => {
 ui.onMenu(() => {
   location.search = '';
 });
+ui.onRestart(() => location.reload());
 player.onLockChange = (locked) => {
   if (won) return;
   if (locked) {
