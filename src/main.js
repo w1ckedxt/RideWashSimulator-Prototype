@@ -1,8 +1,9 @@
-// Ride Wash Simulator — bootstrap & game-loop.
+// RideWash Simulator — bootstrap & game-loop.
 // Eén level per pagina-load (?level=<id>); het levelregister bepaalt de
 // volgorde en unlock-progressie.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { dirtVisionUniform, dirtTimeUniform } from './materials.js';
 import { DirtSystem } from './dirt.js';
 import { PlayerControls } from './player.js';
 import { Washer } from './washer.js';
@@ -112,7 +113,7 @@ const SHARE_URL = 'https://lifthill.studio';
 ui.onShare(() => {
   const mins = Math.floor(playSeconds / 60);
   const secs = Math.round(playSeconds % 60);
-  const text = `I pressure-washed the ${level.name} spotless in ${mins}m ${secs}s in Ride Wash Simulator 💦🎢 ` +
+  const text = `I pressure-washed the ${level.name} spotless in ${mins}m ${secs}s in RideWash Simulator 💦🎢 ` +
     `A free PowerWash-style prototype by @ThomasGeelens — try to beat my time!`;
   window.open(
     `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(SHARE_URL)}`,
@@ -147,6 +148,9 @@ document.addEventListener('keydown', (e) => {
     beaconActive = !beaconActive;
     beaconTimer = 0;
     beacon.visible = false;
+    // PowerWash-stijl dirt vision: ál het resterende vuil licht op
+    dirtVisionUniform.value = beaconActive ? 1 : 0;
+    ui.toast(beaconActive ? '🔍 Dirt vision ON' : '🔍 Dirt vision OFF');
   }
 });
 
@@ -182,6 +186,7 @@ function tick() {
 
   player.update(dt);
   if (envUpdate) envUpdate(dt);
+  dirtTimeUniform.value += dt;
   const spraying = player.spraying && started && !won;
   washer.update(dt, spraying);
 

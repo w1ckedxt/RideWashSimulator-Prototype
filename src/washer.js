@@ -76,15 +76,22 @@ class ParticlePool {
 }
 
 function buildGunModel() {
+  // Parkonderhoud-vibe: teal body met oranje accenten, RWS-logo's, manometer
+  // en een slang die naar je heup loopt — alsof hij echt uit het magazijn komt.
   const gun = new THREE.Group();
-  const yellow = new THREE.MeshStandardMaterial({ color: 0xf2b705, roughness: 0.5 });
+  const teal = new THREE.MeshStandardMaterial({ color: 0x44706a, roughness: 0.45, metalness: 0.2 });
+  const orange = new THREE.MeshStandardMaterial({ color: 0xe08a35, roughness: 0.4, metalness: 0.25 });
   const black = new THREE.MeshStandardMaterial({ color: 0x1d1f24, roughness: 0.55 });
   const steel = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.85, roughness: 0.3 });
 
   const handle = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.16, 0.07), black);
   handle.position.set(0, -0.1, 0.1);
   handle.rotation.x = 0.25;
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.09, 0.3), yellow);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.064, 0.095, 0.3), teal);
+  const capF = new THREE.Mesh(new THREE.BoxGeometry(0.066, 0.097, 0.05), orange);
+  capF.position.z = -0.13;
+  const capB = new THREE.Mesh(new THREE.BoxGeometry(0.066, 0.097, 0.05), orange);
+  capB.position.z = 0.13;
   const trigger = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.06, 0.025), black);
   trigger.position.set(0, -0.06, 0.05);
   const lance = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.55, 8), steel);
@@ -93,27 +100,59 @@ function buildGunModel() {
   const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.016, 0.07, 8), black);
   nozzle.rotation.x = Math.PI / 2;
   nozzle.position.set(0, 0.01, -0.72);
-  gun.add(handle, body, trigger, lance, nozzle);
+  gun.add(handle, body, capF, capB, trigger, lance, nozzle);
 
-  // "RWS"-merkplaatje op de zijkant van de body
+  // manometer bovenop (wijzertje op druk)
+  const gauge = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.018, 12), black);
+  gauge.position.set(0, 0.058, -0.06);
+  const gaugeFace = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.021, 0.021, 0.02, 12),
+    new THREE.MeshStandardMaterial({ color: 0xf3e3c2, roughness: 0.3 }));
+  gaugeFace.position.set(0, 0.059, -0.06);
+  const needle = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.002, 0.016),
+    new THREE.MeshStandardMaterial({ color: 0xc23028 }));
+  needle.position.set(0, 0.07, -0.065);
+  needle.rotation.y = 0.6;
+  gun.add(gauge, gaugeFace, needle);
+
+  // slang naar beneden (uit beeld richting heup)
+  const hoseCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, -0.17, 0.12),
+    new THREE.Vector3(0.03, -0.3, 0.22),
+    new THREE.Vector3(0.1, -0.46, 0.3),
+    new THREE.Vector3(0.22, -0.6, 0.34),
+  ]);
+  const hose = new THREE.Mesh(
+    new THREE.TubeGeometry(hoseCurve, 10, 0.013, 8),
+    new THREE.MeshStandardMaterial({ color: 0x2a2d31, roughness: 0.7 }));
+  gun.add(hose);
+
+  // groot, goed leesbaar RWS-logo op beide flanken + bovenop
   const c = document.createElement('canvas');
-  c.width = 128; c.height = 48;
+  c.width = 256; c.height = 96;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#1d1f24';
-  ctx.fillRect(0, 0, 128, 48);
-  ctx.fillStyle = '#e07b33';
-  ctx.font = 'bold 34px "Avenir Next", sans-serif';
+  ctx.fillStyle = '#e08a35';
+  ctx.fillRect(0, 0, 256, 96);
+  ctx.strokeStyle = '#3a2a1d';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, 248, 88);
+  ctx.fillStyle = '#3a2a1d';
+  ctx.font = '900 64px "Avenir Next", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('RWS', 64, 36);
+  ctx.fillText('RWS', 128, 70);
   const labelTex = new THREE.CanvasTexture(c);
   labelTex.colorSpace = THREE.SRGBColorSpace;
-  const labelMat = new THREE.MeshStandardMaterial({ map: labelTex, roughness: 0.5 });
-  for (const sideX of [-0.0305, 0.0305]) {
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.06), labelMat);
-    label.position.set(sideX, 0.01, 0.02);
+  const labelMat = new THREE.MeshStandardMaterial({ map: labelTex, roughness: 0.4 });
+  for (const sideX of [-0.0335, 0.0335]) {
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.068), labelMat);
+    label.position.set(sideX, 0.005, 0.0);
     label.rotation.y = sideX > 0 ? Math.PI / 2 : -Math.PI / 2;
     gun.add(label);
   }
+  const topLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.055, 0.022), labelMat);
+  topLabel.position.set(0, 0.049, 0.08);
+  topLabel.rotation.x = -Math.PI / 2;
+  gun.add(topLabel);
 
   const tip = new THREE.Object3D();
   tip.position.set(0, 0.01, -0.76);

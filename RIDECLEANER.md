@@ -1,8 +1,8 @@
-# RIDECLEANER.md — Ride Wash Simulator
+# RIDECLEANER.md — RideWash Simulator
 > Source of truth voor dit project.
 
 ## STATUS
-**Fase: PROTOTYPE-POLISH — v3 "Ride Wash Simulator" (11 juni 2026, Thomas test)**
+**Fase: PROTOTYPE-POLISH — v3 "RideWash Simulator" (11 juni 2026, Thomas test)**
 
 PowerWash Simulator-stijl game, volledig 3D (Three.js), first-person, Engels,
 browser-based zonder build step (alles lokaal gevendord, itch.io-klaar).
@@ -106,7 +106,7 @@ src/main.js           Bootstrap, level-keuze, PMREM-reflecties, game-loop
   klaar (src/models.js).
 - **2026-06-11** — v1: one-shot build Steel Comet, geverifieerd 60 FPS.
 - **2026-06-11** — v1.1: lifthill-walkway, ~120 bomen, wolken, plaza, hekken.
-- **2026-06-11** — v2: rebrand "Ride Wash Simulator" (grimey thema, logo-slot),
+- **2026-06-11** — v2: rebrand "RideWash Simulator" (grimey thema, logo-slot),
   Engelse UI, 5 levels met unlock-progressie (carousel → ship → top spin →
   woodie → steel), alles schoonmaakbaar (walkway, ketting, betonvoeten,
   stationsdak), CellAtlas-systeem, PMREM-reflecties, gedempt gritty palet.

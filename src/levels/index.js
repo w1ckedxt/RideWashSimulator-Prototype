@@ -2,10 +2,11 @@
 import { CAROUSEL } from './carousel.js';
 import { SHIP } from './ship.js';
 import { TOPSPIN } from './topspin.js';
+import { DARKRIDE } from './darkride.js';
 import { WOODIE } from './woodie.js';
 import { STEELCOMET } from './steelcomet.js';
 
-export const LEVELS = [CAROUSEL, SHIP, TOPSPIN, WOODIE, STEELCOMET];
+export const LEVELS = [CAROUSEL, SHIP, TOPSPIN, DARKRIDE, WOODIE, STEELCOMET];
 
 const DONE_KEY = 'rws_done';
 

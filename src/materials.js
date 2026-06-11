@@ -7,16 +7,30 @@ import { CONFIG } from './config.js';
 const dustColor = new THREE.Color(...CONFIG.colors.dust);
 const leafColor = new THREE.Color(...CONFIG.colors.leaf);
 
+// Gedeelde uniforms: dirt vision (F) laat al het resterende vuil oplichten.
+export const dirtVisionUniform = { value: 0 };
+export const dirtTimeUniform = { value: 0 };
+
 function injectDirt(shader, texture) {
   shader.uniforms.uDirtMap = { value: texture };
   shader.uniforms.uDustColor = { value: dustColor };
   shader.uniforms.uLeafColor = { value: leafColor };
+  shader.uniforms.uDirtVision = dirtVisionUniform;
+  shader.uniforms.uDirtTime = dirtTimeUniform;
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', [
       '#include <common>',
       'uniform sampler2D uDirtMap;',
       'uniform vec3 uDustColor;',
       'uniform vec3 uLeafColor;',
+      'uniform float uDirtVision;',
+      'uniform float uDirtTime;',
+    ].join('\n'))
+    .replace('#include <emissivemap_fragment>', [
+      '#include <emissivemap_fragment>',
+      '// dirt vision (F): resterend vuil pulseert oranje',
+      'totalEmissiveRadiance += texture2D(uDirtMap, vUv).r * uDirtVision',
+      '  * (0.4 + 0.18 * sin(uDirtTime * 5.0)) * vec3(1.0, 0.45, 0.1);',
     ].join('\n'))
     .replace('#include <map_fragment>', [
       '#include <map_fragment>',
