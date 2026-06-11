@@ -2,12 +2,16 @@
 > Source of truth voor dit project.
 
 ## STATUS
-**Fase: SPEELBAAR — v2 "Ride Wash Simulator" met 5 levels (11 juni 2026)**
+**Fase: PROTOTYPE-POLISH — v3 "Ride Wash Simulator" (11 juni 2026, Thomas test)**
 
 PowerWash Simulator-stijl game, volledig 3D (Three.js), first-person, Engels,
-browser-based zonder build step. Grimey staal/roest-huisstijl (naar Thomas'
-logo). Vijf levels met unlock-progressie. Geverifieerd in Chrome: ~60 FPS op
-het zwaarste level, schone console, alle schoonmaak-mechanics getest.
+browser-based zonder build step (alles lokaal gevendord, itch.io-klaar).
+Vijf levels, allemaal direct speelbaar (prototype/free play). PowerWash-grade
+vuil (zwart/bruin/groen, druipstrepen), vloeiende spuitstreken, geaard poppetje
+met loopdek op beide coasterbanen, inloopbare operator-booths, vieze naamborden,
+bergen, hires wolken, vast ochtendlicht (dag/nachtcyclus uitgeschakeld in code).
+Branding: PROTOTYPE-badge + credits (x.com/ThomasGeelens, lifthill.studio) +
+feedback-CTA (Hello@Lifthill.studio). Geverifieerd ~60 FPS, schone console.
 
 ## SPELEN
 ```bash
@@ -74,7 +78,7 @@ src/main.js           Bootstrap, level-keuze, PMREM-reflecties, game-loop
   GLTF-modellen laden kan met THREE.GLTFLoader (addons staan al in de import map).
 
 ## ACTIVE WORK
-- (geen — v2 af; zie IDEAS)
+- Thomas test het prototype; daarna itch.io-release (zip bouwen + uploaden).
 
 ## IDEAS
 - Echte HDRI-lucht (Poly Haven) i.p.v. gradient
@@ -89,6 +93,17 @@ src/main.js           Bootstrap, level-keuze, PMREM-reflecties, game-loop
 - Logo komt van Thomas (chat-afbeelding) → `assets/logo.png`, met CSS-fallback.
 
 ## ARCHIEF
+- **2026-06-11** — v3 prototype-polish (vele iteraties op feedback Thomas):
+  geaard poppetje (zwaartekracht/springen/V=hoogwerker) + stabiel grond-plakken
+  + onzichtbaar loopdek op beide coasterbanen; ESC-pauzemenu met settings;
+  free play; PowerWash-grade vuil (max dekking, zwart/bruin/groen, drips,
+  smoothstep-randen, streek-interpolatie); per-level polish (carouselpaarden
+  in 5 vachtkleuren, schip-drakenkop, Top Spin naar referentiefoto met
+  startpositie-gondel/sterren/stippenbanner/contragewicht); geparkeerde treinen;
+  stations met trapjes/airgates; inloopbare operator-booths; vieze naamborden;
+  bergen + hires wolken + (uitgezette) dag/nachtcyclus; Ride Wash-branding,
+  logo-slot, credits en feedback-CTA; three.js lokaal gevendord; GLB-pijplijn
+  klaar (src/models.js).
 - **2026-06-11** — v1: one-shot build Steel Comet, geverifieerd 60 FPS.
 - **2026-06-11** — v1.1: lifthill-walkway, ~120 bomen, wolken, plaza, hekken.
 - **2026-06-11** — v2: rebrand "Ride Wash Simulator" (grimey thema, logo-slot),
