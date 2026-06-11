@@ -1,0 +1,10 @@
+{
+  "name": "ride-cleaner-simulator",
+  "version": "1.0.0",
+  "description": "PowerWash-style simulator: spuit een stalen achtbaan schoon",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "serve": "python3 -m http.server 8080"
+  }
+}

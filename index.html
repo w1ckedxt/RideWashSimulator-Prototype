@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ride Cleaner Simulator — Steel Comet</title>
+  <link rel="icon" href="data:," />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0b1320; }
+    body { font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; color: #eaf2fb; }
+    canvas { display: block; }
+
+    /* ---------- overlays ---------- */
+    .overlay {
+      position: fixed; inset: 0; z-index: 20;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 50% 35%, rgba(20, 42, 70, 0.92), rgba(7, 12, 22, 0.96));
+      text-align: center; cursor: pointer; user-select: none;
+    }
+    .overlay.hidden { display: none; }
+    .overlay h1 {
+      font-size: 52px; letter-spacing: 4px; font-weight: 800;
+      background: linear-gradient(90deg, #4dc3ff, #9be8ff, #4dc3ff);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 0 40px rgba(77, 195, 255, 0.25);
+    }
+    .overlay h2 { font-size: 19px; font-weight: 500; color: #aac6e2; margin-top: 10px; }
+    .overlay .panel {
+      margin-top: 34px; padding: 22px 34px; border-radius: 14px;
+      background: rgba(13, 24, 40, 0.75); border: 1px solid rgba(120, 180, 240, 0.25);
+      font-size: 15px; line-height: 2; color: #cfe2f5; text-align: left;
+    }
+    .overlay .panel b { color: #8fd4ff; display: inline-block; min-width: 110px; }
+    .overlay .cta { margin-top: 30px; font-size: 17px; color: #ffd866; animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+    #winOverlay h1 { background: linear-gradient(90deg, #ffd866, #fff3c4, #ffd866); -webkit-background-clip: text; background-clip: text; }
+    #winStats { margin-top: 24px; font-size: 18px; line-height: 2; color: #d8e8f8; }
+    #winOverlay .cta { color: #8fd4ff; }
+
+    /* ---------- HUD ---------- */
+    #hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: none; }
+    #hud.active { display: block; }
+
+    #crosshair {
+      position: absolute; left: 50%; top: 50%; width: 6px; height: 6px;
+      transform: translate(-50%, -50%); border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 6px rgba(140, 210, 255, 0.9), 0 0 0 7px rgba(160, 215, 255, 0.18);
+    }
+
+    #progressWrap {
+      position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+      width: 420px; text-align: center;
+    }
+    #progressLabel { font-size: 13px; letter-spacing: 2px; color: #bcd8f0; margin-bottom: 6px; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+    #progressBar {
+      height: 14px; border-radius: 8px; overflow: hidden;
+      background: rgba(8, 16, 28, 0.65); border: 1px solid rgba(140, 200, 255, 0.35);
+    }
+    #progressFill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #2fa8ff, #6fe3ff);
+      box-shadow: 0 0 12px rgba(80, 190, 255, 0.6); transition: width 0.25s ease;
+    }
+
+    #sections {
+      position: absolute; top: 18px; right: 18px; width: 215px;
+      background: rgba(8, 16, 28, 0.6); border: 1px solid rgba(120, 180, 240, 0.2);
+      border-radius: 10px; padding: 12px 14px; font-size: 12.5px;
+    }
+    #sections .row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+    #sections .name { flex: 0 0 92px; color: #c4daf0; }
+    #sections .bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; }
+    #sections .bar i { display: block; height: 100%; width: 0%; background: #56c8ff; border-radius: 3px; transition: width 0.3s; }
+    #sections .row.done .name { color: #7be08c; }
+    #sections .row.done .bar i { background: #7be08c; }
+
+    #stats {
+      position: absolute; bottom: 16px; left: 18px;
+      background: rgba(8, 16, 28, 0.6); border: 1px solid rgba(120, 180, 240, 0.2);
+      border-radius: 10px; padding: 10px 16px; font-size: 13px; color: #bcd8f0; line-height: 1.8;
+    }
+    #stats b { color: #8fd4ff; }
+
+    #hint {
+      position: absolute; bottom: 16px; right: 18px; font-size: 12px; color: rgba(190, 215, 240, 0.65);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8); text-align: right; line-height: 1.7;
+    }
+
+    #toasts { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .toast {
+      padding: 10px 22px; border-radius: 24px; font-size: 16px; font-weight: 600;
+      background: rgba(20, 60, 30, 0.85); border: 1px solid rgba(130, 230, 150, 0.5); color: #b8f5c4;
+      animation: toastIn 0.35s ease, toastOut 0.5s ease 3.2s forwards;
+    }
+    @keyframes toastIn { from { transform: translateY(-14px) scale(0.9); opacity: 0; } }
+    @keyframes toastOut { to { transform: translateY(-10px); opacity: 0; } }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="startOverlay" class="overlay">
+    <h1>RIDE CLEANER SIMULATOR</h1>
+    <h2>De <b>Steel Comet</b> ligt vol stof, blaadjes en viezigheid — spuit hem weer als nieuw!</h2>
+    <div class="panel">
+      <div><b>Muis</b> rondkijken &nbsp;·&nbsp; <b>Linkermuisknop</b> sprayen</div>
+      <div><b>WASD</b> bewegen &nbsp;·&nbsp; <b>Shift</b> sneller</div>
+      <div><b>Spatie / C</b> omhoog / omlaag (hoogwerker-modus)</div>
+      <div><b>F</b> vuilzoeker aan/uit (baken wijst naar vies plekje)</div>
+      <div><b>Esc</b> pauze</div>
+    </div>
+    <div class="cta">▶ Klik om te beginnen</div>
+  </div>
+
+  <div id="pauseOverlay" class="overlay hidden">
+    <h1>PAUZE</h1>
+    <div class="cta">▶ Klik om verder te gaan</div>
+  </div>
+
+  <div id="winOverlay" class="overlay hidden">
+    <h1>✨ SPIC &amp; SPAN! ✨</h1>
+    <h2>De Steel Comet glimt weer als nieuw. De gasten kunnen weer instappen!</h2>
+    <div id="winStats"></div>
+    <div class="cta">▶ Klik om opnieuw te spelen</div>
+  </div>
+
+  <div id="hud">
+    <div id="crosshair"></div>
+    <div id="progressWrap">
+      <div id="progressLabel">SCHOON: 0%</div>
+      <div id="progressBar"><div id="progressFill"></div></div>
+    </div>
+    <div id="sections"></div>
+    <div id="stats"></div>
+    <div id="toasts"></div>
+    <div id="hint">F = vuilzoeker · Spatie/C = omhoog/omlaag<br>Kom dichtbij voor meer spuitkracht</div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
