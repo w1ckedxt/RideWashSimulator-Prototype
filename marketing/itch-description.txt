@@ -1,0 +1,15 @@
+🎢 RideWash Simulator (Prototype)
+
+A free PowerWash-style game set in a theme park. Grab your pressure washer and blast six filthy rides back to a sparkling shine — a carousel, a swinging ship, a top spin, a fairy-tale dark ride, a wooden coaster and a big steel coaster.
+
+✨ Features
+- 6 hand-built rides, every single part individually cleanable
+- Walk anywhere — even on the coaster tracks — or press V for the cherry picker and fly
+- Dirt vision (F) highlights every spot you missed
+- Best times per ride + share your run on X
+- Cozy fairground vibes, runs in your browser, nothing to install
+
+🚧 This is a prototype! If you enjoy it, please tell us — that's literally how this becomes a full game. Shout on X @ThomasGeelens, Reddit, or mail Hello@Lifthill.studio 🙌
+
+Controls: Mouse look · LMB spray · WASD move · Shift sprint · Space jump · V cherry picker · F dirt vision · Esc pause
+Best played on desktop with mouse & keyboard.
