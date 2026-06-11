@@ -12,7 +12,8 @@ function liftSampleIndices(samples) {
   const idx = [];
   for (let i = 0; i < samples.length; i++) {
     const s = samples[i];
-    if (s.pos.x >= 24 && s.pos.x <= 90 && Math.abs(s.pos.z) < 4 && s.T.x > 0.4) {
+    // alleen het klimmende/vlakke deel van de lift (niet de drop)
+    if (s.pos.x >= 24 && s.pos.x <= 90 && Math.abs(s.pos.z) < 4 && s.T.x > 0.4 && s.T.y > -0.05) {
       idx.push(i);
     }
   }

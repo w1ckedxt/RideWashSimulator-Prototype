@@ -81,19 +81,63 @@ export const SHIP = {
     group.add(hull);
     cleanables.push(hull);
 
-    // boeg- en heksteven
+    // boegsteven met drakenkop + hekspiraal
     const hullExtraGeos = [];
-    for (const side of [-1, 1]) {
-      const fig = new THREE.ConeGeometry(0.32, 1.5, 8);
-      fig.rotateZ(side * -Math.PI / 3.2);
-      fig.translate(side * 3.4, 2.45, 0);
-      hullExtraGeos.push(fig);
+    const neck = new THREE.CylinderGeometry(0.16, 0.3, 1.6, 8);
+    neck.rotateZ(-Math.PI / 3.4);
+    neck.translate(3.5, 2.5, 0);
+    hullExtraGeos.push(neck);
+    const dragonHead = new THREE.SphereGeometry(0.3, 8, 7);
+    dragonHead.scale(1.4, 0.9, 0.8);
+    dragonHead.translate(4.35, 3.15, 0);
+    hullExtraGeos.push(dragonHead);
+    const snout = new THREE.ConeGeometry(0.16, 0.5, 6);
+    snout.rotateZ(-Math.PI / 2);
+    snout.translate(4.85, 3.1, 0);
+    hullExtraGeos.push(snout);
+    for (const hz of [-0.12, 0.12]) {
+      const horn = new THREE.ConeGeometry(0.05, 0.3, 5);
+      horn.rotateZ(0.5);
+      horn.translate(4.2, 3.5, hz);
+      hullExtraGeos.push(horn);
     }
-    const hullExtra = new THREE.Mesh(mergeGeometries(hullExtraGeos), hullMat);
+    const sternCurl = new THREE.ConeGeometry(0.28, 1.7, 7);
+    sternCurl.rotateZ(Math.PI / 3.2);
+    sternCurl.translate(-3.5, 2.6, 0);
+    hullExtraGeos.push(sternCurl);
+
+    const goldMat = createCleanableMaterial(
+      { color: 0xc9a227, metalness: 0.8, roughness: 0.3 }, hullMask.texture);
+    const hullExtra = new THREE.Mesh(mergeGeometries(hullExtraGeos), goldMat);
     hullExtra.castShadow = true;
     hullExtra.userData.maskId = 'hull';
     group.add(hullExtra);
     cleanables.push(hullExtra);
+
+    // rode gunwale-band rond de romp
+    const gunwale = new THREE.Mesh(new THREE.TorusGeometry(1, 0.09, 8, 28), createCleanableMaterial(
+      { color: 0x9e3528, metalness: 0.3, roughness: 0.45 }, hullMask.texture));
+    gunwale.geometry.scale(3.1, 0.95, 1);
+    gunwale.rotation.x = Math.PI / 2;
+    gunwale.position.y = 2.15;
+    gunwale.castShadow = true;
+    gunwale.userData.maskId = 'hull';
+    group.add(gunwale);
+    cleanables.push(gunwale);
+
+    // instapvlonders naast het schip (beloopbaar)
+    const deckMat = new THREE.MeshStandardMaterial({ color: 0x6e5638, roughness: 0.8 });
+    for (const dz of [-2.1, 2.1]) {
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.25, 1.1), deckMat);
+      deck.position.set(0, 0.85, dz);
+      deck.castShadow = deck.receiveShadow = true;
+      deck.userData.walkable = true;
+      group.add(deck);
+      const steps = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.25, 0.9), deckMat);
+      steps.position.set(0, 0.42, dz + (dz > 0 ? 0.9 : -0.9));
+      steps.userData.walkable = true;
+      group.add(steps);
+    }
 
     // ---------- bankjes ----------
     const benchAtlas = new CellAtlas(dirt, {

@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { computeTrackData, v3 } from '../layout.js';
 import { buildTubeChunks, addChunkMeshes } from '../track.js';
+import { buildWalkway } from '../walkway.js';
+import { buildTrain } from '../train.js';
 import { CellAtlas } from '../atlas.js';
 import { createCleanableMaterial } from '../materials.js';
 import { buildEnvironment, makeSign, makeFenceLine, FENCE_GREEN } from '../environment.js';
@@ -203,6 +205,11 @@ export const WOODIE = {
     cleanables.push(platform);
 
     scene.add(group);
+    scene.add(buildWalkway(trackData, dirt, cleanables));
+    scene.add(buildTrain({
+      trackData, dirt, cleanables,
+      startMeters: 3, bodyColor: 0x4f3722, noseColor: 0x8a2e2e, seatColor: 0x2e2a26,
+    }));
     scene.add(makeSign('Timber Howl', { x: 22, z: 12, rotY: -Math.PI / 2.6 }));
     scene.add(makeFenceLine([[-3, 5.2], [18, 5.2]], 1.0, FENCE_GREEN()).translateY(1.5));
 

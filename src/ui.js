@@ -45,14 +45,20 @@ export class UI {
   }
 
   #buildSections() {
-    this.sectionRows = new Map();
+    // groepeer per label: asset-modellen hebben vaak meerdere masks per sectie
+    this.sectionGroups = new Map();
     const sections = document.getElementById('sections');
     for (const m of this.dirt.masks.values()) {
-      const row = document.createElement('div');
-      row.className = 'row';
-      row.innerHTML = `<span class="name">${m.label}</span><span class="bar"><i></i></span>`;
-      sections.appendChild(row);
-      this.sectionRows.set(m.id, row);
+      let group = this.sectionGroups.get(m.label);
+      if (!group) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<span class="name">${m.label}</span><span class="bar"><i></i></span>`;
+        sections.appendChild(row);
+        group = { row, ids: [] };
+        this.sectionGroups.set(m.label, group);
+      }
+      group.ids.push(m.id);
     }
   }
 
@@ -121,10 +127,16 @@ export class UI {
     this.progressFill.style.width = `${(p * 100).toFixed(1)}%`;
     this.progressLabel.textContent = `CLEAN: ${(p * 100).toFixed(1)}%`;
 
-    for (const m of this.dirt.masks.values()) {
-      const row = this.sectionRows.get(m.id);
-      row.querySelector('i').style.width = `${((m.cleaned / m.total) * 100).toFixed(0)}%`;
-      row.classList.toggle('done', m.done);
+    for (const group of this.sectionGroups.values()) {
+      let cleaned = 0, total = 0, done = true;
+      for (const id of group.ids) {
+        const m = this.dirt.masks.get(id);
+        cleaned += m.cleaned;
+        total += m.total;
+        done = done && m.done;
+      }
+      group.row.querySelector('i').style.width = `${((cleaned / total) * 100).toFixed(0)}%`;
+      group.row.classList.toggle('done', done);
     }
 
     const mins = Math.floor(seconds / 60);

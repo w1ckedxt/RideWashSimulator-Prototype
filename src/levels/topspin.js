@@ -5,6 +5,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CellAtlas } from '../atlas.js';
 import { createCleanableMaterial } from '../materials.js';
 import { buildEnvironment, makeSign, makeFenceLine, FENCE_GREEN } from '../environment.js';
+import { stripeTexture } from '../textures.js';
 
 const Y = new THREE.Vector3(0, 1, 0);
 
@@ -92,26 +93,45 @@ export const TOPSPIN = {
     });
     const gondolaMat = createCleanableMaterial(
       { color: 0xc7a83c, metalness: 0.35, roughness: 0.4 }, gondolaMask.texture);
-    const gondolaGeos = [];
+    const seatMatA = createCleanableMaterial(
+      { color: 0xa83236, metalness: 0.25, roughness: 0.45 }, gondolaMask.texture);
+    const seatMatB = createCleanableMaterial(
+      { color: 0x2f5276, metalness: 0.25, roughness: 0.45 }, gondolaMask.texture);
+    const barMat = createCleanableMaterial(
+      { color: 0x2a2d31, metalness: 0.7, roughness: 0.4 }, gondolaMask.texture);
+
+    const beamGeos = [];
+    const seatsA = [];
+    const seatsB = [];
+    const barGeos = [];
     const beam = new THREE.BoxGeometry(8.4, 0.55, 0.8);
     beam.translate(0, gondolaY, 0);
-    gondolaGeos.push(beam);
+    beamGeos.push(beam);
     for (let k = 0; k < 8; k++) {
       const sx = -3.5 + k * 1.0;
+      const bucket = k % 2 ? seatsA : seatsB;
       for (const sz of [-0.85, 0.85]) {
         const seat = new THREE.BoxGeometry(0.7, 0.8, 0.6);
         seat.translate(sx, gondolaY - 0.75, sz);
-        gondolaGeos.push(seat);
+        bucket.push(seat);
         const headrest = new THREE.BoxGeometry(0.5, 0.5, 0.18);
         headrest.translate(sx, gondolaY - 0.1, sz + (sz > 0 ? 0.24 : -0.24));
-        gondolaGeos.push(headrest);
+        bucket.push(headrest);
+        // veiligheidsbeugel
+        const bar = new THREE.TorusGeometry(0.26, 0.04, 6, 10, Math.PI);
+        bar.rotateZ(Math.PI / 2);
+        bar.rotateY(Math.PI / 2);
+        bar.translate(sx, gondolaY - 0.55, sz + (sz > 0 ? -0.3 : 0.3));
+        barGeos.push(bar);
       }
     }
-    const gondola = new THREE.Mesh(mergeGeometries(gondolaGeos), gondolaMat);
-    gondola.castShadow = true;
-    gondola.userData.maskId = 'gondola';
-    group.add(gondola);
-    cleanables.push(gondola);
+    for (const [geos, mat] of [[beamGeos, gondolaMat], [seatsA, seatMatA], [seatsB, seatMatB], [barGeos, barMat]]) {
+      const mesh = new THREE.Mesh(mergeGeometries(geos), mat);
+      mesh.castShadow = true;
+      mesh.userData.maskId = 'gondola';
+      group.add(mesh);
+      cleanables.push(mesh);
+    }
 
     // ---------- bewegend platform ----------
     const floorMask = dirt.createMask({
@@ -127,6 +147,25 @@ export const TOPSPIN = {
     floor.userData.maskId = 'tfloor';
     group.add(floor);
     cleanables.push(floor);
+
+    // hazard-strepen langs de platformranden + betonvoeten onder de torens
+    const hazardMat = new THREE.MeshStandardMaterial({
+      map: stripeTexture('#d8b020', '#1d1d1d', 24), roughness: 0.7,
+    });
+    for (const hz of [-2.45, 2.45]) {
+      const strip = new THREE.Mesh(new THREE.BoxGeometry(11, 0.42, 0.18), hazardMat);
+      strip.position.set(0, 0.2, hz);
+      group.add(strip);
+    }
+    const footMat = new THREE.MeshStandardMaterial({ color: 0x8d8a84, roughness: 0.9 });
+    for (const side of [-1, 1]) {
+      for (const lz of [-1.9, 1.9]) {
+        const foot = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.5, 1.1), footMat);
+        foot.position.set(side * 6.3, 0.25, lz);
+        foot.castShadow = foot.receiveShadow = true;
+        group.add(foot);
+      }
+    }
 
     scene.add(group);
     scene.add(makeSign('Top Spin', { x: -8, z: 10, rotY: Math.PI / 5 }));

@@ -2,6 +2,7 @@
 import { computeTrackData, steelCometPoints } from '../layout.js';
 import { buildTrack } from '../track.js';
 import { buildWalkway } from '../walkway.js';
+import { buildTrain } from '../train.js';
 import { buildEnvironment, makeSign, makeStation } from '../environment.js';
 
 export const STEELCOMET = {
@@ -17,6 +18,10 @@ export const STEELCOMET = {
     cleanables.push(...track.cleanables);
 
     scene.add(buildWalkway(trackData, dirt, cleanables));
+    scene.add(buildTrain({
+      trackData, dirt, cleanables,
+      startMeters: 3, bodyColor: 0x1d4e89, noseColor: 0xe8b23a,
+    }));
     scene.add(makeStation(dirt, cleanables));
     scene.add(makeSign('Steel Comet', { x: 26, z: 13, rotY: -Math.PI / 2.4 }));
 

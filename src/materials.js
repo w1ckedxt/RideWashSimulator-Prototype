@@ -36,8 +36,9 @@ function injectDirt(shader, texture) {
     ].join('\n'));
 }
 
-export function createCleanableMaterial({ color, metalness = 0.35, roughness = 0.25 }, dirtTexture) {
-  const mat = new THREE.MeshStandardMaterial({ color, metalness, roughness });
+export function createCleanableMaterial({ color, map = null, metalness = 0.35, roughness = 0.25 }, dirtTexture) {
+  // map-support: ook getextureerde (asset pack-)modellen krijgen de vuillaag
+  const mat = new THREE.MeshStandardMaterial({ color, map, metalness, roughness });
   mat.defines = { USE_UV: '' };
   mat.onBeforeCompile = (shader) => injectDirt(shader, dirtTexture);
   // Zelfde programma voor alle vuil-materialen (uniforms verschillen per materiaal).
