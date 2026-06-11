@@ -2,7 +2,7 @@
 > Source of truth voor dit project.
 
 ## STATUS
-**Fase: PROTOTYPE-POLISH — v3 "RideWash Simulator" (11 juni 2026, Thomas test)**
+**Fase: 🚀 GERELEASED OP ITCH.IO — 11 juni 2026**\n\n**Speel hem live: https://lifthillstudio.itch.io/ridewash-simulator**
 
 PowerWash Simulator-stijl game, volledig 3D (Three.js), first-person, Engels,
 browser-based zonder build step (alles lokaal gevendord, itch.io-klaar).
@@ -78,7 +78,8 @@ src/main.js           Bootstrap, level-keuze, PMREM-reflecties, game-loop
   GLTF-modellen laden kan met THREE.GLTFLoader (addons staan al in de import map).
 
 ## ACTIVE WORK
-- Thomas test het prototype; daarna itch.io-release (zip bouwen + uploaden).
+- Live op itch.io! Nu: delen op Reddit/X, feedback verzamelen via
+  Hello@Lifthill.studio, en reageren op comments op de itch-pagina.
 
 ## IDEAS
 - Echte HDRI-lucht (Poly Haven) i.p.v. gradient
