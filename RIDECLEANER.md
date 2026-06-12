@@ -81,6 +81,15 @@ src/main.js           Bootstrap, level-keuze, PMREM-reflecties, game-loop
 - Live op itch.io! Thomas deelt op Reddit/X (incl. eigen gameplay-video via
   Cmd+Shift+5). Daarna: feedback verzamelen (Hello@Lifthill.studio, itch
   comments) en patches via nieuwe zip-upload (zip-recept: zie hieronder).
+- **Multi-portal rollout bezig** (zie plan/session-2026-06-12.md voor details):
+  1. Newgrounds — upload gestart 12 juni (zip + teksten klaar, "allow embed"
+     aan); na publish: pointer lock in iframe testen.
+  2. Game Jolt — volgende quick win, zelfde zip ("Upload Browser Build").
+  3. CrazyGames — Basic Launch submitten (geen SDK nodig; Full Launch later
+     = SDK + uitgaande links weg).
+  4. Poki — geparkeerd tot touch-controls (mobiel verplicht daar).
+- Promo-ideeën: Show HN ("vanilla Three.js, no build step"), satisfying-clip
+  voor TikTok/Shorts, Three.js Discord showcase + #madewiththreejs.
 
 ## PATCH-RECEPT (nieuwe build naar itch)
 1. Fix maken → `node --check` op gewijzigde files → lokaal testen (:8123)
